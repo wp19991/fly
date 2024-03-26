@@ -38,6 +38,8 @@ sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 sudo apt update
 
+# 如果有安装依赖冲突，安装下面的可以解决
+# sudo apt install libpulse0=1:15.99.1+dfsg1-1ubuntu1 libpulse-mainloop-glib0=1:15.99.1+dfsg1-1ubuntu1 libusb-1.0-0=2:1.0.25-1ubuntu1
 # 进行安装
 sudo apt install ros-humble-desktop ros-dev-tools ros-humble-mavros ros-humble-mavlink -y
 source /opt/ros/humble/setup.bash && echo "source /opt/ros/humble/setup.bash" >> .bashrc
