@@ -1,10 +1,14 @@
 需要先安装ros2，然后安装mavros和mavlink，之后连接usb，可以运行下面的代码
 
 ## 前置安装
+
+- 使用ubuntu-22.04.4-desktop-amd64.iso
+- https://ubuntu.com/download/desktop
+
 ```bash
-# 使用ubuntu-22.04.4-desktop-amd64.iso
-# 更新镜像源
+# 使用root模式
 sudo -i
+# 更新镜像源
 cat <<'EOF' > /etc/apt/sources.list
 # 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
 deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
@@ -62,13 +66,14 @@ exit
 # 下载qgc
 # https://github.com/mavlink/QGroundControl/releases
 proxychains wget https://github.com/mavlink/qgroundcontrol/releases/download/v4.3.0/QGroundControl.AppImage
+mv QGroundControl.AppImage qgc.AppImage
+chmod +x qgc..AppImage
 ```
 
-
 ## 安装ros2和mavros mavlink
+
 - https://docs.px4.io/main/zh/ros/ros2_comm.html#%E5%AE%89%E8%A3%85-ros-2
 - https://cloudkerneltech.gitbook.io/kerlouduav/userguide-zh/tutorial-zh/offboard_python_zh
-
 
 ```bash
 sudo -i
@@ -90,13 +95,14 @@ source /opt/ros/humble/setup.bash && echo "source /opt/ros/humble/setup.bash" >>
 exit
 ```
 
-
 ## 测试usb连接代码，需要安装mavsdk的库
+
 - https://mavsdk.mavlink.io/main/en/python/quickstart.html
 
 ```bash
 # 必须要在root模式下才可以启动
 sudo -i
+# 当前是conda,pyhton3.10环境
 pip install mavsdk aioconsole
 vim t_arm.py
 python t_arm.py
