@@ -2,19 +2,62 @@
 
 ## 前置安装
 ```bash
-sudo apt update
-sudo apt install vim git proxychains openssh-server curl -y
+# 使用ubuntu-22.04.4-desktop-amd64.iso
+# 更新镜像源
+sudo -i
+cat <<'EOF' > /etc/apt/sources.list
+# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-updates main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-backports main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-backports main restricted universe multiverse
+
+deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+# deb-src http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+
+# 预发布软件源，不建议启用
+# deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-proposed main restricted universe multiverse
+# # deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-proposed main restricted universe multiverse
+EOF
+
+apt update
+apt install vim git proxychains openssh-server curl -y
 # 使用代理
-sudo vim /etc/proxychains.conf
+vim /etc/proxychains.conf
 http	192.168.1.81	7890
 
-# 安装conda环境
+# 安装conda环境在root模式下
 wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 chmod +x Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 ./Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 
+# 配置conda镜像源
+cat <<'EOF' > ~/.condarc
+channels:
+  - defaults
+show_channel_urls: true
+default_channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+custom_channels:
+  conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  msys2: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  bioconda: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  menpo: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  pytorch-lts: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  simpleitk: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  deepmodeling: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/
+EOF
+
+# 在root模式下使用conda环境
 python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# 退出root模式
+exit
 
 # 下载qgc
 # https://github.com/mavlink/QGroundControl/releases
@@ -28,21 +71,23 @@ proxychains wget https://github.com/mavlink/qgroundcontrol/releases/download/v4.
 
 
 ```bash
+sudo -i
 # 添加ros源
-sudo apt install software-properties-common
-sudo add-apt-repository universe
+apt install software-properties-common
+add-apt-repository universe
 
 # 使用代理下载文件：sudo proxychains curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-sudo apt update
+# 使用国内镜像源 https://mirrors.tuna.tsinghua.edu.cn/help/ros2/
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] https://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+apt update
 
-# 如果有安装依赖冲突，安装下面的可以解决
-# sudo apt install libpulse0=1:15.99.1+dfsg1-1ubuntu1 libpulse-mainloop-glib0=1:15.99.1+dfsg1-1ubuntu1 libusb-1.0-0=2:1.0.25-1ubuntu1
 # 进行安装
-sudo apt install ros-humble-desktop ros-dev-tools ros-humble-mavros ros-humble-mavlink -y
+apt install ros-humble-desktop ros-dev-tools ros-humble-mavros ros-humble-mavlink -y
 source /opt/ros/humble/setup.bash && echo "source /opt/ros/humble/setup.bash" >> .bashrc
+
+exit
 ```
 
 
@@ -50,26 +95,25 @@ source /opt/ros/humble/setup.bash && echo "source /opt/ros/humble/setup.bash" >>
 - https://mavsdk.mavlink.io/main/en/python/quickstart.html
 
 ```bash
-# 必须要在root模式下才可以启动，因此conda可以在root模式下安装
-
-sudo python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip
-sudo pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-sudo pip3 install mavsdk aioconsole
-
-
-sudo python3 t_arm.py
+# 必须要在root模式下才可以启动
+sudo -i
+pip install mavsdk aioconsole
+vim t_arm.py
+python t_arm.py
 ```
 
 ```python
 import asyncio
+
 from mavsdk import System
+
 
 async def run():
     # Connect to the drone
     drone = System()
     # 端口使用`ls /dev/serial/by-id`进行查看
     await drone.connect(system_address="serial:///dev/serial/by-id/usb-Auterion_PX4_FMU_v6C.x_0-if00:57600")
-    
+
     print("Waiting for drone to connect...")
     async for state in drone.core.connection_state():
         if state.is_connected:
@@ -86,7 +130,8 @@ async def run():
     print("Arming...")
     await drone.action.arm()
     print("Drone is armed!")
-	
+
+
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())
