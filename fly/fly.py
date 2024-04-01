@@ -29,7 +29,6 @@ async def run():
     # First, set the target position (2m above the initial point)
     print("-- Setting initial setpoint")
     await drone.offboard.set_position_ned(PositionNedYaw(0.0, 0.0, -2.0, 0.0))
-    await asyncio.sleep(10)
 
     # Then start offboard mode.
     print("-- Starting offboard")

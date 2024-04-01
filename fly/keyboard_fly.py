@@ -3,7 +3,6 @@ from mavsdk import System
 from mavsdk.offboard import (OffboardError, PositionNedYaw)
 import threading
 import keyboard
-# pip install keyboard
 
 # The current position of the drone
 position = [0.0, 0.0, -2.0]
@@ -54,9 +53,9 @@ async def control_drone():
     await drone.action.set_takeoff_altitude(2)
     await drone.action.takeoff()
 
-    # First, set the target position (2m above the initial point)
+    # First, set the target position (4m above the initial point)
     print("-- Setting initial setpoint")
-    await drone.offboard.set_position_ned(PositionNedYaw(0.0, 0.0, -2.0, 0.0))
+    await drone.offboard.set_position_ned(PositionNedYaw(0.0, 0.0, -4.0, 0.0))
 
     # Then start offboard mode.
     print("-- Starting offboard")
@@ -67,7 +66,7 @@ async def control_drone():
         # Keep the script running and listen to keyboard input
         while True:
             global position
-            await drone.offboard.set_position_ned(PositionNedYaw(position[0], position[1], -2.0, 0))
+            await drone.offboard.set_position_ned(PositionNedYaw(position[0], position[1], -4.0, 0))
 
             await asyncio.sleep(1)
 
