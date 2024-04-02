@@ -2,6 +2,12 @@
 
 px4相关
 
+## tpis
+```bash
+# 视频处理
+ffmpeg -i a.mp4 -c:v libx264 -c:a aac b.mp4
+```
+
 ## 演示
 
 - 模拟
