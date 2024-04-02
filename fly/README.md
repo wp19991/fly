@@ -2,7 +2,7 @@
 
 ```bash
 # 不能在conda或者虚拟环境中运行下面的代码
-conda deactivate
+# conda deactivate
 # 需要使用python3.8，ubuntu2004默认是python38，不需要改动
 # 安装库
 pip install opencv-python opencv-contrib-python cv_bridge
@@ -25,6 +25,15 @@ ros2 topic list
 conda deactivate
 python3 search_tag.py
 ```
+
+- 下面的命令是用ros2启动模拟的，还在修改
+```bash
+source ~/PX4-Autopilot/Tools/simulation/gazebo-classic/setup_gazebo.bash ~/PX4-Autopilot ~/PX4-Autopilot/build/px4_sitl_default
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:~/PX4-Autopilot
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:~/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic
+/opt/ros/kinetic/lib/mavros/install_geographiclib_datasets.sh
+```
+
 
 ## 进行控制起飞
 
