@@ -30,7 +30,6 @@ class ImageSubscriber(Node):
             '/camera/image_raw',
             self.image_callback,
             10)
-        self.subscription
         self.bridge = CvBridge()
 
     def image_callback(self, msg):
@@ -53,15 +52,6 @@ class ImageSubscriber(Node):
         # Display the image; Note: This will not work if your computer does not have a GUI.
         cv2.imshow("Image window", cv_image)
         cv2.waitKey(3)
-
-    def draw_cube(self, img, corners, imgpts):
-        imgpts = np.int32(imgpts).reshape(-1, 2)
-
-        # draw cube edges
-        for i, j in zip(range(4), range(4, 8)):
-            img = cv2.line(img, tuple(corners[i]), tuple(imgpts[j]), (255), 3)
-
-        return img
 
 
 def main(args=None):
