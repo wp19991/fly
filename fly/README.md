@@ -42,17 +42,5 @@ cd fly
 python keyboard_fly.py
 ```
 
-## 飞行稳定性
 
-- 如果无人机起飞在位置模式下悬停左右前后小范围飘,对位置误差调整能力弱 ，调整加大速度控制器增益
-- MPC_XY_VEL_P_ACC
-- MPC_XY_VEL_I_ACC
-- https://blog.csdn.net/z1872385/article/details/131700007
-- https://docs.px4.io/main/zh/flight_stack/controller_diagrams.html#多旋翼速度控制器
-
-- 修改位置控制器增益，增加这两个值将使无人机对位置偏差有更快的响应，控制无人机在位置控制模式下的响应。
-- MPC_XY_P
-- MPC_Z_P
-
-- 调整这些参数可能会对飞行性能产生很大影响，在每次修改参数后都进行飞行测试。
 
