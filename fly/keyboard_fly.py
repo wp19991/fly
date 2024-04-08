@@ -5,30 +5,48 @@ import threading
 import keyboard
 
 # The current position of the drone
-position = [0.0, 0.0, -2.0]
+position = [0.0, 0.0, -4.0, True]
+step_size_m = 0.5
+response_time_s = 0.5
+
+
+def move_up(e):
+    position[2] -= step_size_m
+
+
+def move_down(e):
+    if position[2] <= 0.0:
+        position[2] += step_size_m
 
 
 def move_forward(e):
-    position[0] += 1.0
+    position[0] += step_size_m
 
 
 def move_backward(e):
-    position[0] -= 1.0
+    position[0] -= step_size_m
 
 
 def move_left(e):
-    position[1] -= 1.0
+    position[1] -= step_size_m
 
 
 def move_right(e):
-    position[1] += 1.0
+    position[1] += step_size_m
+
+
+def move_q(e):
+    position[3] = False
 
 
 def handle_keyboard_input():
+    keyboard.on_press_key('u', move_up)
+    keyboard.on_press_key('i', move_down)
     keyboard.on_press_key('w', move_forward)
     keyboard.on_press_key('s', move_backward)
     keyboard.on_press_key('a', move_left)
     keyboard.on_press_key('d', move_right)
+    keyboard.on_press_key('q', move_q)
 
 
 async def control_drone():
@@ -66,12 +84,26 @@ async def control_drone():
         # Keep the script running and listen to keyboard input
         while True:
             global position
-            await drone.offboard.set_position_ned(PositionNedYaw(position[0], position[1], -4.0, 0))
-
-            await asyncio.sleep(1)
+            await drone.offboard.set_position_ned(PositionNedYaw(position[0], position[1], position[2], 0))
+            await asyncio.sleep(response_time_s)
+            print("x:{: <4},y:{: <4},z:{: <4}".format(position[0], position[1], position[2]))
+            # stop
+            if not position[3]:
+                break
 
     except OffboardError as error:
         print(f"Starting offboard mode failed with error code: {error._result.result}")
+    except KeyboardInterrupt:
+        print("User interrupted, stopping...")
+    finally:
+        await drone.action.land()
+        await asyncio.sleep(15)
+        # Stop offboard mode.
+        print("Stopping offboard mode...")
+        await drone.offboard.stop()
+        # Disarm the drone.
+        print("Disarming...")
+        await drone.action.disarm()
 
 
 if __name__ == "__main__":
