@@ -5,7 +5,7 @@ import threading
 import keyboard
 
 # The current position of the drone
-position = [-1, -1, -4.0, True]
+position = [0, 0, -4.0, True]
 step_size_m = 0.2
 response_time_s = 0.2
 
