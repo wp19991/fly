@@ -7,14 +7,16 @@ from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 
-# Define axis for visualization (length of 0.1 meters)
-axis = np.float32([[0.1, 0, 0], [0, 0.1, 0], [0, 0, -0.1]]).reshape(-1, 3)
-
+# 模拟环境中相机参数在/root/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/depth_camera/depth_camera.sdf
+# 计算公式
+# K[0][0]=fx=K[1][1]=fy=width/(2*tan(FOV/2)=848/(2*tan(1.5009831567/2))=454.6843330573585
+# K[0][2]=cx=width/2=848/2=424.0
+# K[1][2]=cy=height/2=480/2=240.0
 # Camera intrinsic matrix
-K = np.array([[391.95377974, 0.0, 335.17043033],
-              [0.0, 377.71297362, 245.03757622],
+K = np.array([[454.6843330573585, 0.0, 424.0],
+              [0.0, 454.6843330573585, 240.0],
               [0.0, 0.0, 1]])
-dist_coeffs = np.array([0.04714445, -0.07145486, 0.00588382, 0.00876541, 0])
+dist_coeffs = np.array([0.0001, 0.0001, 0.0001, 0.0001, 0])
 
 # Initialize the detector parameters using default values
 parameters = cv2.aruco.DetectorParameters()
@@ -23,8 +25,8 @@ parameters = cv2.aruco.DetectorParameters()
 # The marker IDs will correspond to the ones in this dictionary.
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
-
 font = cv2.FONT_HERSHEY_SIMPLEX
+
 
 class ImageSubscriber(Node):
     def __init__(self):
@@ -59,7 +61,6 @@ class ImageSubscriber(Node):
             cv2.putText(cv_image, "Id: " + str(ids), (10, 40), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
             cv2.putText(cv_image, "rvec: " + str(rvec[0, :, :]), (10, 70), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
             cv2.putText(cv_image, "tvec: " + str(tvec[0, :, :]), (10, 100), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-
 
         # Display the image; Note: This will not work if your computer does not have a GUI.
         end = time.time()
