@@ -44,5 +44,8 @@ cd fly
 python keyboard_fly.py
 ```
 
+windows下运行`keybpard_fly.py`，需要先去`https://github.com/mavlink/mavsdk/releases` 下载mavsdk的服务器
+运行`./mavsdk_server -p 50051`
+然后在代码中修改`drone = System(mavsdk_server_address='localhost', port=50051)`
 
 

@@ -3,6 +3,9 @@
 px4相关
 
 ## tpis
+
+- 下载`https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip`
+
 ```bash
 # 视频处理
 ffmpeg -i w.mp4 -c:v libx264 -c:a aac w_safe.mp4
@@ -21,3 +24,6 @@ ffmpeg -i w.mp4 -c:v libx264 -c:a aac w_safe.mp4
 
 - 识别地面aruco
 - ![识别地面aruco.png](doc/4.png)
+
+- 室内环境搭建，识别aruco
+- ![室内_无风_地面有二维码_识别aruco](doc/5.png)
