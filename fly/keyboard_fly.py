@@ -5,9 +5,9 @@ import threading
 import keyboard
 
 # The current position of the drone
-position = [0.0, 0.0, -4.0, True]
-step_size_m = 0.5
-response_time_s = 0.5
+position = [-1, -1, -4.0, True]
+step_size_m = 0.2
+response_time_s = 0.2
 
 
 def move_up(e):
@@ -86,7 +86,8 @@ async def control_drone():
             global position
             await drone.offboard.set_position_ned(PositionNedYaw(position[0], position[1], position[2], 0))
             await asyncio.sleep(response_time_s)
-            print("x:{: <4},y:{: <4},z:{: <4}".format(position[0], position[1], position[2]))
+            print("x:{: <4},y:{: <4},z:{: <4}".format(position[0].__round__(2), position[1].__round__(2),
+                                                      position[2].__round__(2)))
             # stop
             if not position[3]:
                 break

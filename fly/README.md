@@ -12,9 +12,11 @@ pip install opencv-python opencv-contrib-python cv_bridge
 
 ```bash
 cd ./PX4-Autopilot/
+make px4_sitl gazebo-classic_iris_downward_depth_camera__empty
 pkill -f px4
-make px4_sitl gazebo-classic_iris_downward_depth_camera__baylands
 
+commander takeoff
+commander land
 
 # 查看ros2的topic
 ros2 topic list
