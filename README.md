@@ -27,3 +27,6 @@ ffmpeg -i w.mp4 -c:v libx264 -c:a aac w_safe.mp4
 
 - 室内环境搭建，识别aruco
 - ![室内_无风_地面有二维码_识别aruco](doc/5.png)
+
+- 室内无人机自主飞行到二维码上空5m处，悬停
+- ![自主飞行到二维码上空5m悬停_有风](doc/6.png)
