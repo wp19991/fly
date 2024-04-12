@@ -30,3 +30,6 @@ ffmpeg -i w.mp4 -c:v libx264 -c:a aac w_safe.mp4
 
 - 室内无人机自主飞行到二维码上空5m处，悬停
 - ![自主飞行到二维码上空5m悬停_有风](doc/6.png)
+
+- 通过aruco计算的位置与真实的位置误差
+- ![通过aruco计算的位置与真实的位置误差](doc/7.png)

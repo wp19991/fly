@@ -193,7 +193,7 @@ async def control_drone():
             # 先控制高度在5米
             hight_m = 0
             async for position in drone.telemetry.position():
-                print(f"当前气压计高度: {position.relative_altitude_m.__round__(2): <4}")
+                print(f"当前气压计高度: {position.relative_altitude_m.__round__(2): <4}m")
                 hight_m = position.relative_altitude_m
                 break
             setup_speed_hight = abs(hight_m - 5) * 3
@@ -203,8 +203,12 @@ async def control_drone():
                 VelocityBodyYawSpeed[2] = -setup_speed_hight
 
             # 根据aruco_pos的位置进行控制VelocityBodyYawSpeed
-            print('当前位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 4), aruco_pos)))
-            print('环境位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 4), aruco_pos)))
+            print('计算位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 5), aruco_pos)))
+            print('真实位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 5), drone_real_position)))
+            print('计算位置与真实位置误差：{: <6}_'.format(((abs(drone_real_position[0] - aruco_pos[0]) +
+                                                            abs(drone_real_position[1] - aruco_pos[1]) +
+                                                            abs(drone_real_position[2] - aruco_pos[2])) / 3).__round__(
+                5)))
             # 根据气压算比例尺
             if hight_m != 0:
                 bili = aruco_pos[2] / hight_m
