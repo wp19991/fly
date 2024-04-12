@@ -17,6 +17,12 @@ from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
 # 先进行初始化
 
 # 相机的初始化
+# 模拟环境中相机参数在/root/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/depth_camera/depth_camera.sdf
+# 计算公式
+# K[0][0]=fx=K[1][1]=fy=width/(2*tan(FOV/2)=848/(2*tan(1.5009831567/2))=454.6843330573585
+# K[0][2]=cx=width/2=848/2=424.0
+# K[1][2]=cy=height/2=480/2=240.0
+# Camera intrinsic matrix
 K = np.array([[454.6843330573585, 0.0, 424.0],
               [0.0, 454.6843330573585, 240.0],
               [0.0, 0.0, 1]])
@@ -46,6 +52,10 @@ drone_real_orientation = [0, 0, 0, 0]
 # 二维码在相机画面中的位置，中心点为0，0，右上为正
 aruco_in_camera = [0, 0]
 
+
+# 编写任务飞行到坐标点处
+# 地面铺设多个二维码，防止摄像头获取不到二维码，多个二维码融合获取定位
+# 当前单个二维码计算误差在0-10cm
 
 def fly_start(e):
     global is_running
@@ -152,19 +162,19 @@ def main(args=None):
     rclpy.shutdown()
 
 
-async def control_drone():
+async def auto_control_drone():
     drone = System()
     await drone.connect(system_address="udp://:14540")
 
-    print("Waiting for drone to be connected...")
+    print("等待无人机连接...")
     async for state in drone.core.connection_state():
         if state.is_connected:
-            print("Drone is connected")
+            print("无人机连接成功")
             break
 
     async for is_ready in drone.telemetry.health():
         if is_ready.is_armable:
-            print("Drone is ready to arm")
+            print("无人机可以进行启动")
             break
 
     global is_running, VelocityBodyYawSpeed, is_move_to_tag_above, aruco_in_camera
@@ -174,10 +184,10 @@ async def control_drone():
         if is_running:
             break
 
-    print("Arming...")
+    print("启动中...")
     await drone.action.arm()
 
-    print("Takeoff...")
+    print("无人机起飞...")
     await drone.action.set_takeoff_altitude(2)
     await drone.action.takeoff()
     await drone.offboard.set_velocity_body(VelocityBodyYawspeed(*VelocityBodyYawSpeed))
@@ -205,10 +215,11 @@ async def control_drone():
             # 根据aruco_pos的位置进行控制VelocityBodyYawSpeed
             print('计算位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 5), aruco_pos)))
             print('真实位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 5), drone_real_position)))
-            print('计算位置与真实位置误差：{: <6}_'.format(((abs(drone_real_position[0] - aruco_pos[0]) +
-                                                            abs(drone_real_position[1] - aruco_pos[1]) +
-                                                            abs(drone_real_position[2] - aruco_pos[2])) / 3).__round__(
-                5)))
+            # 误差计算目前使用三者差值取平均
+            abs_wc = ((abs(drone_real_position[0] - aruco_pos[0]) +
+                       abs(drone_real_position[1] - aruco_pos[1]) +
+                       abs(drone_real_position[2] - aruco_pos[2])) / 3).__round__(5)
+            print('计算位置与真实位置误差：{: <6}_'.format(abs_wc))
             # 根据气压算比例尺
             if hight_m != 0:
                 bili = aruco_pos[2] / hight_m
@@ -219,13 +230,12 @@ async def control_drone():
                 # 需要知道无人机的坐标系下，二维码的坐标，需要进行转换
                 # TODO 需要将通过二维码的坐标和相机中二维码的平面位置两个进行融合，来控制无人机
                 #  因为无人机飞行的时候相机一直在震动，无法准确的确定无人机是否在给定的位置
-                #
 
                 # 因为无人机起飞后的朝向和二维码的地面坐标系xyz轴不一样
                 # 需要根据旋转变量来进行计算
                 print('aruco图像位置x:{: <4}%,y:{: <4}%'.format(*map(lambda x: round(x, 4), aruco_in_camera)))
                 setup_speed_0 = abs(aruco_in_camera[0] - 0) * 1
-                # 越大越要向那个地方飞，因为二维码是相对于无人机的
+                # 差距越大越要向那个地方飞，因为二维码是相对于无人机的
                 if aruco_in_camera[0] > 0:  # x -> left,right
                     VelocityBodyYawSpeed[1] = setup_speed_0
                 else:
@@ -239,11 +249,11 @@ async def control_drone():
             await drone.offboard.set_velocity_body(VelocityBodyYawspeed(*VelocityBodyYawSpeed))
             # 上下为负数，展示变成正数
             VelocityBodyYawSpeed[2] = -VelocityBodyYawSpeed[2]
-            print("飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
+            print("无人机自主飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
                 *map(lambda x: round(x, 4), VelocityBodyYawSpeed)))
             VelocityBodyYawSpeed[2] = -VelocityBodyYawSpeed[2]
             print('=' * 30)
-            # stop
+            # 进行降落，则跳出循环
             if not is_running:
                 break
 
@@ -264,7 +274,7 @@ async def control_drone():
 
 def fly():
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(control_drone())
+    loop.run_until_complete(auto_control_drone())
 
 
 if __name__ == '__main__':
