@@ -78,7 +78,7 @@ def handle_keyboard_input():
     keyboard.on_press_key('l', landing)
 
 
-# 对图像进行订阅
+# 对图像和无人机在模拟环境中的位置进行订阅
 class Ros2TopicSubscription(Node):
     def __init__(self):
         super().__init__('ros2_topic_subscriber')
