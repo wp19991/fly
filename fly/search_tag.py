@@ -50,7 +50,9 @@ class ImageSubscriber(Node):
         corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
         if len(corners) > 0:
-            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.05, K, dist_coeffs)
+            # 像素位置大小()/600  57,57  530,57  57,530
+            # (530-57)/600=0.78833
+            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.78833, K, dist_coeffs)
             cv2.drawFrameAxes(cv_image, K, dist_coeffs, rvec[0, :, :], tvec[0, :, :], 0.03)
             # 在二维码的附近画框
             cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)

@@ -9,6 +9,7 @@ import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from nav_msgs.msg import Odometry
 
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
@@ -38,6 +39,10 @@ is_move_to_tag_above = False
 # aruco坐标系下无人机的xyz位置
 aruco_pos = [0, 0, 0]
 
+# 无人机在模拟环境中真实位置
+drone_real_position = [0, 0, 0]
+drone_real_orientation = [0, 0, 0, 0]
+
 # 二维码在相机画面中的位置，中心点为0，0，右上为正
 aruco_in_camera = [0, 0]
 
@@ -64,15 +69,29 @@ def handle_keyboard_input():
 
 
 # 对图像进行订阅
-class ImageSubscriber(Node):
+class Ros2TopicSubscription(Node):
     def __init__(self):
-        super().__init__('image_subscriber')
+        super().__init__('ros2_topic_subscriber')
         self.subscription = self.create_subscription(
             Image,
             '/camera/image_raw',
             self.image_callback,
             10)
         self.bridge = CvBridge()
+        self.subscription_pos = self.create_subscription(
+            Odometry,
+            '/odom',
+            self.position_callback,
+            10)
+
+    def position_callback(self, msg):
+        # 这里可以对接收到的消息进行处理，此处仅打印
+        # self.get_logger().info('Received: "%s"' % msg)
+        # 无人机在模拟环境中的位置，二维码中心点为0，0，0
+        global drone_real_position, drone_real_orientation
+        drone_real_position = [msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z]
+        drone_real_orientation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y,
+                                  msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
 
     def image_callback(self, msg):
         global aruco_pos, aruco_in_camera
@@ -100,8 +119,7 @@ class ImageSubscriber(Node):
             aruco_in_camera = 2 * (center_marker - center_image) / np.array([width, height])
             aruco_in_camera = aruco_in_camera.tolist()
             aruco_in_camera[1] = -aruco_in_camera[1]
-
-            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 1, K, dist_coeffs)
+            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.78833, K, dist_coeffs)
             cv2.drawFrameAxes(cv_image, K, dist_coeffs, rvec[0, :, :], tvec[0, :, :], 0.03)
             # 在二维码的附近画框
             cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)
@@ -125,12 +143,12 @@ class ImageSubscriber(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    image_subscriber = ImageSubscriber()
-    rclpy.spin(image_subscriber)
+    ro2_topic_subscriber = Ros2TopicSubscription()
+    rclpy.spin(ro2_topic_subscriber)
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    image_subscriber.destroy_node()
+    ro2_topic_subscriber.destroy_node()
     rclpy.shutdown()
 
 
@@ -175,7 +193,7 @@ async def control_drone():
             # 先控制高度在5米
             hight_m = 0
             async for position in drone.telemetry.position():
-                print(f"当前气压计高度: {position.relative_altitude_m}")
+                print(f"当前气压计高度: {position.relative_altitude_m.__round__(2): <4}")
                 hight_m = position.relative_altitude_m
                 break
             setup_speed_hight = abs(hight_m - 5) * 3
@@ -186,6 +204,7 @@ async def control_drone():
 
             # 根据aruco_pos的位置进行控制VelocityBodyYawSpeed
             print('当前位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 4), aruco_pos)))
+            print('环境位置x:{: <4}_,y:{: <4}_,z:{: <4}_'.format(*map(lambda x: round(x, 4), aruco_pos)))
             # 根据气压算比例尺
             if hight_m != 0:
                 bili = aruco_pos[2] / hight_m
@@ -200,7 +219,7 @@ async def control_drone():
 
                 # 因为无人机起飞后的朝向和二维码的地面坐标系xyz轴不一样
                 # 需要根据旋转变量来进行计算
-                print('二维码的位置', aruco_in_camera)
+                print('aruco图像位置x:{: <4}%,y:{: <4}%'.format(*map(lambda x: round(x, 4), aruco_in_camera)))
                 setup_speed_0 = abs(aruco_in_camera[0] - 0) * 1
                 # 越大越要向那个地方飞，因为二维码是相对于无人机的
                 if aruco_in_camera[0] > 0:  # x -> left,right
@@ -214,8 +233,12 @@ async def control_drone():
                     VelocityBodyYawSpeed[0] = -setup_speed_1
 
             await drone.offboard.set_velocity_body(VelocityBodyYawspeed(*VelocityBodyYawSpeed))
-            print(" x:{: <4},y:{: <4}z:{: <4}".format(
-                *map(lambda x: round(x, 2), VelocityBodyYawSpeed)))
+            # 上下为负数，展示变成正数
+            VelocityBodyYawSpeed[2] = -VelocityBodyYawSpeed[2]
+            print("飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
+                *map(lambda x: round(x, 4), VelocityBodyYawSpeed)))
+            VelocityBodyYawSpeed[2] = -VelocityBodyYawSpeed[2]
+            print('=' * 30)
             # stop
             if not is_running:
                 break
