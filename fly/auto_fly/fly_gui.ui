@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>868</width>
+    <width>842</width>
     <height>616</height>
    </rect>
   </property>
@@ -665,7 +665,7 @@ y:{}m/s</string>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>420</x>
+      <x>400</x>
       <y>230</y>
       <width>424</width>
       <height>240</height>
@@ -697,7 +697,7 @@ y:{}m/s</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>868</width>
+     <width>842</width>
      <height>22</height>
     </rect>
    </property>

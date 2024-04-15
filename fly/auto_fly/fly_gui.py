@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_fly_app(object):
     def setupUi(self, fly_app):
         fly_app.setObjectName("fly_app")
-        fly_app.resize(868, 616)
+        fly_app.resize(842, 616)
         self.centralwidget = QtWidgets.QWidget(fly_app)
         self.centralwidget.setObjectName("centralwidget")
         self.groupBox = QtWidgets.QGroupBox(self.centralwidget)
@@ -289,7 +289,7 @@ class Ui_fly_app(object):
         self.gridLayout.addWidget(self.drone_control_xy_label, 1, 1, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout)
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(420, 230, 424, 240))
+        self.label.setGeometry(QtCore.QRect(400, 230, 424, 240))
         self.label.setObjectName("label")
         self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
         self.textBrowser.setGeometry(QtCore.QRect(20, 480, 811, 101))
@@ -301,7 +301,7 @@ class Ui_fly_app(object):
         self.textBrowser.setObjectName("textBrowser")
         fly_app.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(fly_app)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 868, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 842, 22))
         self.menubar.setObjectName("menubar")
         fly_app.setMenuBar(self.menubar)
 

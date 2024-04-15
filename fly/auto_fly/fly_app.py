@@ -2,11 +2,16 @@ import asyncio
 import datetime
 import sys
 import os
+import time
 
+import cv2
+import numpy as np
+import requests
 from PyQt5 import QtCore
+from PyQt5.QtGui import QImage, QPixmap
 from qasync import QEventLoop, QApplication, asyncSlot
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
@@ -41,6 +46,32 @@ app_data = {
 drone1: System = System()
 
 
+class VideoThread(QThread):
+    changePixmap = pyqtSignal(QImage)
+
+    def run(self):
+        while True:
+            self.fresh()
+            time.sleep(0.01)
+
+    def fresh(self):
+        url = "http://192.168.1.216:8000/video_feed"
+        stream = requests.get(url, stream=True)
+        bytes = b''
+        for chunk in stream.iter_content(chunk_size=1024):
+            bytes += chunk
+            a = bytes.find(b'\xff\xd8')
+            b = bytes.find(b'\xff\xd9')
+            if a != -1 and b != -1:
+                jpg = bytes[a:b + 2]
+                bytes = bytes[b + 2:]
+                img = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                if img is not None:
+                    h, w, ch = img.shape
+                    qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
+                    self.changePixmap.emit(qt_img)
+
+
 class main_win(QMainWindow, fly_window):
     def __init__(self):
         super(main_win, self).__init__()
@@ -71,6 +102,13 @@ class main_win(QMainWindow, fly_window):
         self.fresh_data_timer.timeout.connect(self.fresh_data)
         # 启动定时器
         self.fresh_data_timer.start()
+
+        self.video_th = VideoThread(self)
+        self.video_th.changePixmap.connect(self.set_image)
+        self.video_th.start()
+
+    def set_image(self, image):
+        self.label.setPixmap(QPixmap.fromImage(image).scaled(int(image.width() * 0.5), int(image.height() * 0.5)))
 
     def drone_forward_add_pushButton_event(self):
         global app_data

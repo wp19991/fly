@@ -14,6 +14,9 @@ C:\DevelopmentTools\Miniconda3\miniconda3\envs\pyqt5_env\Scripts\pyuic5.exe fly_
 - [x] 设置无人机起飞高度
 - [x] 设置无人机飞行的启动参数
 - [x] 设置打印消息，或者标签显示消息
+- [x] 显示ros2传回的画面展示到gui中
+- [ ] 识别二维码
+- [ ] 实现自动悬停
 
 允许设置使用ros连接查看摄像头或者直接通过opencv连接远程摄像头
 ros连接摄像头可能需要系统安装ros，可以在运行摄像头的电脑上使用vlc来将摄像头发布为网络摄像头，那样在windows下就不需要安装ros2以及其他依赖
