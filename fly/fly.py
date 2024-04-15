@@ -5,6 +5,8 @@ from mavsdk.offboard import (OffboardError, PositionNedYaw)
 
 
 async def run():
+    # drone = System(mavsdk_server_address='192.168.1.216', port=50051)
+    # await drone.connect()
     drone = System()
     await drone.connect(system_address="udp://:14540")
 

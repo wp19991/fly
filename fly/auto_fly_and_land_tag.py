@@ -23,10 +23,8 @@ from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
 # K[0][2]=cx=width/2=848/2=424.0
 # K[1][2]=cy=height/2=480/2=240.0
 # Camera intrinsic matrix
-K = np.array([[454.6843330573585, 0.0, 424.0],
-              [0.0, 454.6843330573585, 240.0],
-              [0.0, 0.0, 1]])
-dist_coeffs = np.array([0.0001, 0.0001, 0.0001, 0.0001, 0])
+K = np.array([[454.6843330573585,0.0,424.0],[0.0,454.6843330573585,240.0],[0.0,0.0,1]])
+dist_coeffs = np.array([0.0001,0.0001,0.0001,0.0001,0])
 
 # 识别二维码的初始化
 parameters = cv2.aruco.DetectorParameters()

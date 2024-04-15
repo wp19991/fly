@@ -33,3 +33,6 @@ ffmpeg -i w.mp4 -c:v libx264 -c:a aac w_safe.mp4
 
 - 通过aruco计算的位置与真实的位置误差
 - ![通过aruco计算的位置与真实的位置误差](doc/7.png)
+
+- 编写控制无人机飞行gui程序
+- ![无人机飞行gui控制程序](doc/8.png)
