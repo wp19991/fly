@@ -147,7 +147,7 @@ class main_win(QMainWindow, fly_window):
         self.fresh_data_timer = QTimer(self)
         # 设置定时器每100ms触发一次
         self.fresh_data_timer.setInterval(100)
-        # 将定时器的timeout信号连接到自定义的函数，即每100ms会调用一次self.my_func函数
+        # 将定时器的timeout信号连接到自定义的函数，即每100ms会调用一次
         self.fresh_data_timer.timeout.connect(self.fresh_data)
         # 启动定时器
         self.fresh_data_timer.start()
@@ -277,10 +277,10 @@ class main_win(QMainWindow, fly_window):
                           float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]
                 await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
                 if app_data["drone_is_auto_search_aruco"]:
-                    self.print_log("无人机自主悬停飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
+                    self.print_log("无人机自主悬停飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
                         *map(lambda x: round(x, 4), v_list)))
                 else:
-                    self.print_log("当前飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
+                    self.print_log("当前飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
                         *map(lambda x: round(x, 4), v_list)))
         except OffboardError as e:
             self.print_log(f"启动非车载模式失败，错误代码为: {e._result.result}")
@@ -379,16 +379,16 @@ class main_win(QMainWindow, fly_window):
         # 将全局变量中的值写到gui中
         # 目前使用一个二维码
         # TODO 如果有多个，可以进行计算融合
-        self.drone_xyz_of_aruco_label.setText('x:{: <4}m,y:{: <4}m,z:{: <4}m'.format(
+        self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m'.format(
             *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0])))
         # 在相机中，二维码的位置，目前使用第一个二维码
-        self.aruco_in_camera_label.setText('x:{: <4}%,y:{: <4}%'.format(
+        self.aruco_in_camera_label.setText('x:{: <7}%,y:{: <7}%'.format(
             *map(lambda x: round(float(x), 4), app_data["aruco_in_camera"][0])))
-        self.drone_real_position_label.setText('x:{: <4}m,y:{: <4}m,z:{: <4}m'.format(
+        self.drone_real_position_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m'.format(
             *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
-        self.drone_altitude_label.setText('{: <4}m'.format(float(app_data["drone_altitude"]).__round__(3)))
+        self.drone_altitude_label.setText('{: <7}m'.format(float(app_data["drone_altitude"]).__round__(3)))
         self.test_connect_status_label.setText(app_data["test_connect_status"])
-        self.drone_control_xy_label.setText('x:{: <4}m/s\ny:{: <4}m/s'.format(float(app_data["drone_forward_m_s"]),
+        self.drone_control_xy_label.setText('x:{: <7}m/s\ny:{: <7}m/s'.format(float(app_data["drone_forward_m_s"]),
                                                                               float(app_data["drone_right_m_s"])))
 
 
