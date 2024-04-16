@@ -33,8 +33,8 @@ app_data = {
     "drone_yawspeed_deg_s": 0.,
     "drone_step_size_m_s": 0.2,
     "drone_response_time_s": 0.2,
-    "camera_k": [[], [], []],  # 相机的内参
-    "camera_dis_coeffs": [],  # 相机的内参
+    "camera_k": [[], [], []],  # 相机的内参k
+    "camera_dis_coeffs": [],  # 相机的内参dis_coeffs
     "drone_xyz_of_aruco": [[0, 0, 0]],  # m 在二维码下无人机的位置
     "aruco_in_camera": [[0, 0]],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置

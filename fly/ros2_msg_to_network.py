@@ -46,9 +46,9 @@ class Ros2TopicSubscription(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    image_subscriber = Ros2TopicSubscription()
-    rclpy.spin(image_subscriber)
-    image_subscriber.destroy_node()
+    ros2_topic_subscriber = Ros2TopicSubscription()
+    rclpy.spin(ros2_topic_subscriber)
+    ros2_topic_subscriber.destroy_node()
     rclpy.shutdown()
 
 

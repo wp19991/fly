@@ -15,6 +15,9 @@ class Ui_fly_app(object):
     def setupUi(self, fly_app):
         fly_app.setObjectName("fly_app")
         fly_app.resize(804, 616)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/ico/无人机.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        fly_app.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(fly_app)
         self.centralwidget.setObjectName("centralwidget")
         self.groupBox_2 = QtWidgets.QGroupBox(self.centralwidget)
@@ -423,3 +426,4 @@ class Ui_fly_app(object):
         self.label_3.setText(_translate("fly_app", "dist_coeffs"))
         self.camera_dis_coeffs_lineEdit.setText(_translate("fly_app", "[0.0001,0.0001,0.0001,0.0001,0]"))
         self.camera_dis_coeffs_lineEdit.setPlaceholderText(_translate("fly_app", "[,,,,]"))
+from res import res_rc

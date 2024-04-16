@@ -36,3 +36,6 @@ ffmpeg -i w.mp4 -c:v libx264 -c:a aac w_safe.mp4
 
 - 编写控制无人机飞行gui程序
 - ![无人机飞行gui控制程序](doc/8.png)
+
+- 模拟环境中的ros2的订阅情况
+- ![ros2的订阅情况](doc/9.png)
