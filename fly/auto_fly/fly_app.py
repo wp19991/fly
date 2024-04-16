@@ -46,6 +46,7 @@ app_data = {
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
     "image_and_data_get_url": "http://192.168.1.216:8000",
     "drone_is_auto_search_aruco": False,  # 无人机是否自动搜寻二维码，并且停在上空
+    "drone_is_kill_fly": False,  # 是否直接关闭飞行的电机
 }
 
 drone1: System = System()
@@ -137,6 +138,7 @@ class main_win(QMainWindow, fly_window):
         self.drone_right_sub_pushButton.clicked.connect(self.drone_right_sub_pushButton_event)
         self.drone_right_add_pushButton.clicked.connect(self.drone_right_add_pushButton_event)
         self.drone_search_aruco_pushButton.clicked.connect(self.drone_search_aruco_pushButton_event)
+        self.drone_kill_pushButton.clicked.connect(self.drone_kill_pushButton_event)
         # doubleSpinBox修改事件
         self.drone_forward_m_s_doubleSpinBox.valueChanged.connect(self.drone_forward_m_s_doubleSpinBox_event)
         self.drone_right_m_s_doubleSpinBox.valueChanged.connect(self.drone_right_m_s_doubleSpinBox_event)
@@ -164,6 +166,10 @@ class main_win(QMainWindow, fly_window):
         self.pix = QPixmap(image).scaled(self.label.width(), self.label.height())
         self.label.setPixmap(self.pix)
         self.label.setScaledContents(True)
+
+    def drone_kill_pushButton_event(self):
+        global app_data
+        app_data['drone_is_kill_fly'] = True
 
     def drone_search_aruco_pushButton_event(self):
         global app_data
@@ -244,6 +250,13 @@ class main_win(QMainWindow, fly_window):
         self.print_log(f'油门给到{app_data["drone_down_m_s"]}，进行起飞')
         try:
             while True:
+                if app_data['drone_is_kill_fly']:
+                    app_data["drone_is_auto_search_aruco"] = False
+                    self.drone_search_status_label.setText("悬停关闭")
+                    self.drone_search_aruco_pushButton.setText("启动悬停")
+                    app_data['drone_is_kill_fly'] = False
+                    await drone1.action.kill()
+                    return
                 if not app_data["drone_is_running"]:
                     app_data["drone_is_auto_search_aruco"] = False
                     self.drone_search_status_label.setText("悬停关闭")
@@ -290,18 +303,17 @@ class main_win(QMainWindow, fly_window):
                         *map(lambda x: round(x, 4), v_list)))
         except OffboardError as e:
             self.print_log(f"启动非车载模式失败，错误代码为: {e._result.result}")
-        finally:
-            # 0.25m/s下降
-            v_list = [0.001, 0.001, 0.25, 0.001]
-            await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
-            self.print_log("无人机降落，等待15s...")
-            await asyncio.sleep(15)
-            await drone1.action.land()
-            await asyncio.sleep(2)
-            self.print_log("停止板载模式...")
-            await drone1.offboard.stop()
-            self.print_log("解除武装...")
-            await drone1.action.disarm()
+        # 0.25m/s下降
+        # v_list = [0.001, 0.001, 0.25, 0.001]
+        # await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
+        await drone1.action.land()
+        self.print_log("无人机降落，等待15s...")
+        await asyncio.sleep(15)
+        self.print_log("停止板载模式...")
+        await drone1.offboard.stop()
+        await asyncio.sleep(1)
+        self.print_log("解除武装...")
+        await drone1.action.disarm()
 
     @asyncSlot()
     async def test_connect_pushButton_event(self):
