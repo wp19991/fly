@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>804</width>
-    <height>616</height>
+    <width>800</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -486,7 +486,7 @@
       <x>11</x>
       <y>270</y>
       <width>331</width>
-      <height>201</height>
+      <height>191</height>
      </rect>
     </property>
     <property name="title">
@@ -653,7 +653,7 @@ y:{}m/s</string>
     <property name="geometry">
      <rect>
       <x>350</x>
-      <y>230</y>
+      <y>220</y>
       <width>424</width>
       <height>240</height>
      </rect>
@@ -665,9 +665,9 @@ y:{}m/s</string>
    <widget class="QTextBrowser" name="textBrowser">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>480</y>
-      <width>761</width>
+      <x>10</x>
+      <y>470</y>
+      <width>771</width>
       <height>101</height>
      </rect>
     </property>
@@ -838,7 +838,7 @@ y:{}m/s</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>804</width>
+     <width>800</width>
      <height>22</height>
     </rect>
    </property>

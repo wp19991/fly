@@ -8,7 +8,7 @@ import time
 import cv2
 import numpy as np
 import requests
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QImage, QPixmap
 from qasync import QEventLoop, QApplication, asyncSlot
 from PyQt5.QtWidgets import QMainWindow
@@ -36,6 +36,7 @@ app_data = {
     "camera_k": [[], [], []],  # 相机的内参k
     "camera_dis_coeffs": [],  # 相机的内参dis_coeffs
     "drone_xyz_of_aruco": [[0, 0, 0]],  # m 在二维码下无人机的位置
+    "drone_xyz_rvec_of_aruco": [[0, 0, 0]],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
     "aruco_in_camera": [[0, 0]],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
@@ -115,6 +116,8 @@ class VideoThread(QThread):
                         cv2.aruco.drawDetectedMarkers(img, corners, ids)
                         # 更新位置
                         app_data['drone_xyz_of_aruco'] = [list(tvec[0, :, :][0])]
+                        # 更新转转变量
+                        app_data['drone_xyz_rvec_of_aruco'] = [list(rvec[0, :, :][0])]
                     h, w, ch = img.shape
                     qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
                     self.changePixmap.emit(qt_img)
@@ -166,7 +169,8 @@ class main_win(QMainWindow, fly_window):
         global app_data
         if app_data["drone_is_auto_search_aruco"]:
             app_data["drone_is_auto_search_aruco"] = False
-            self.drone_search_status_label.setText("自动悬停关闭")
+            self.drone_search_status_label.setText("悬停关闭")
+            self.drone_search_aruco_pushButton.setText("启动悬停")
             return
         # 首先确保二维码在画面中，不在画面中，提示用户不能进行
         # 获取QLabel的Pixmap
@@ -229,7 +233,7 @@ class main_win(QMainWindow, fly_window):
         self.print_log("等待启动...")
         await drone1.action.arm()
         self.print_log("无人机起飞...")
-        await drone1.action.set_takeoff_altitude(2)
+        await drone1.action.set_takeoff_altitude(float(app_data["limit_height_m"]))
         await drone1.action.takeoff()
         v_list = [float(app_data["drone_forward_m_s"]), float(app_data["drone_right_m_s"]),
                   float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]
@@ -242,12 +246,13 @@ class main_win(QMainWindow, fly_window):
             while True:
                 if not app_data["drone_is_running"]:
                     app_data["drone_is_auto_search_aruco"] = False
+                    self.drone_search_status_label.setText("悬停关闭")
+                    self.drone_search_aruco_pushButton.setText("启动悬停")
                     break
                 await asyncio.sleep(float(app_data["drone_response_time_s"]))
                 # 可以更新气压计高度
                 now_height_m = 0
                 async for position in drone1.telemetry.position():
-                    # self.print_log(f"当前气压计高度: {position.relative_altitude_m.__round__(2): <4}m")
                     app_data["drone_altitude"] = position.relative_altitude_m
                     now_height_m = position.relative_altitude_m
                     break
@@ -259,7 +264,7 @@ class main_win(QMainWindow, fly_window):
                 else:
                     app_data["drone_down_m_s"] = -setup_speed_hight
 
-                # 自动在二维码上空飞行
+                # 自动在二维码上空悬停，二维码在相机正中间
                 if app_data["drone_is_auto_search_aruco"]:
                     setup_speed_0 = abs(app_data["aruco_in_camera"][0][0] - 0) * 1
                     # 差距越大越要向那个地方飞，因为二维码是相对于无人机的
@@ -277,17 +282,22 @@ class main_win(QMainWindow, fly_window):
                           float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]
                 await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
                 if app_data["drone_is_auto_search_aruco"]:
-                    self.print_log("无人机自主悬停飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
-                        *map(lambda x: round(x, 4), v_list)))
+                    self.print_log_one_line(
+                        "无人机自主悬停飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
+                            *map(lambda x: round(x, 4), v_list)))
                 else:
-                    self.print_log("当前飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
+                    self.print_log_one_line("当前飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
                         *map(lambda x: round(x, 4), v_list)))
         except OffboardError as e:
             self.print_log(f"启动非车载模式失败，错误代码为: {e._result.result}")
         finally:
+            # 0.25m/s下降
+            v_list = [0.001, 0.001, 0.25, 0.001]
+            await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
             self.print_log("无人机降落，等待15s...")
-            await drone1.action.land()
             await asyncio.sleep(15)
+            await drone1.action.land()
+            await asyncio.sleep(2)
             self.print_log("停止板载模式...")
             await drone1.offboard.stop()
             self.print_log("解除武装...")
@@ -360,6 +370,24 @@ class main_win(QMainWindow, fly_window):
         else:
             self.textBrowser.append(f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}"
                                     f" -- {list(text)}")
+
+    def print_log_one_line(self, new_text):
+        new_text = f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}  -- {new_text}"
+        text = self.textBrowser.toPlainText()
+        lines = text.split('\n')
+
+        if len(lines) > 0:
+            # Remove the last line
+            if '飞行控制:前后:' in lines[-1]:
+                lines = lines[:-1]
+            # Append the new text
+            lines.append(new_text)
+            # Update the text browser content
+            self.textBrowser.setPlainText('\n'.join(lines))
+        # Move cursor to end and scroll to cursor
+        cursor = self.textBrowser.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        self.textBrowser.setTextCursor(cursor)
 
     def fresh_data(self):
         # 将gui的数据写道全局变量中
