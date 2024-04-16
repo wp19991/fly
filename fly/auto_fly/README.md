@@ -34,8 +34,12 @@ https://github.com/mavlink/MAVSDK/releases
 # MAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)
 MAV_1_BROADCAST=1 make px4_sitl gazebo-classic_iris_downward_depth_camera
 # 使用下面的命令连接到远程的模拟环境中的无人机
-cd C:\Users\Admin\Desktop\fly\file\mavsdk-windows-x64-release\bin
-mavsdk_server_bin.exe -p 50051 udp://192.168.1.216:14580
+./mavsdk_server_musl_x86_64 -p 50051 udp://:14580
+# 启动网络转发ros2图像和真实位置
+
+
+# cd C:\Users\Admin\Desktop\fly\file\mavsdk-windows-x64-release\bin
+# mavsdk_server_bin.exe -p 50051 udp://192.168.1.216:14580
 ```
 
 - 控制现实中的无人机

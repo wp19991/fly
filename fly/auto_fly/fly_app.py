@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import json
 import sys
 import os
 import time
@@ -37,13 +38,19 @@ app_data = {
     "drone_xyz_of_aruco": [[0, 0, 0]],  # m 在二维码下无人机的位置
     "aruco_in_camera": [[0, 0]],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
+    "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
     "drone_altitude": 0.,  # 无人机的气压计高度
     "limit_height_m": 1.,
     "test_connect_status": "status",  # 连接成功，连接失败，可以启动，不能启动
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
+    "image_and_data_get_url": "http://192.168.1.216:8000",
 }
 
 drone1: System = System()
+# 识别二维码的初始化
+parameters = cv2.aruco.DetectorParameters()
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 class VideoThread(QThread):
@@ -55,9 +62,17 @@ class VideoThread(QThread):
             time.sleep(0.01)
 
     def fresh(self):
-        url = "http://192.168.1.216:8000/video_feed"
-        stream = requests.get(url, stream=True)
+        global app_data, parameters, aruco_dict, font
+        # 获取位置的网址
+        url1 = f'{app_data["image_and_data_get_url"]}/position'
+        res = requests.get(url1)
+        app_data["drone_real_position"] = res.json()["real_position"]
+        app_data["drone_real_orientation"] = res.json()["real_orientation"]
+        # 获取无人机底部画面的网址
+        url2 = f'{app_data["image_and_data_get_url"]}/video_feed'
+        stream = requests.get(url2, stream=True)
         bytes = b''
+        img = ''
         for chunk in stream.iter_content(chunk_size=1024):
             bytes += chunk
             a = bytes.find(b'\xff\xd8')
@@ -67,6 +82,49 @@ class VideoThread(QThread):
                 bytes = bytes[b + 2:]
                 img = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
                 if img is not None:
+                    # 识别二维码
+                    # Convert to grayscale
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    # 获取图像的框，id，rejectedImgPoints
+                    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+                    if len(corners) > 0:
+                        try:
+                            # 二维码在相机画面中的位置，中心点为0，0，右上为正
+                            # 假设corners是检测到的第一个aruco marker的角点位置
+                            corner = corners[0][0]
+                            # 计算二维码的中心点位置
+                            center_marker = np.mean(corner, axis=0)
+                            # 获取图片的大小
+                            height, width = gray.shape
+                            # 计算图片的中心点位置
+                            center_image = np.array([width / 2, height / 2])
+                            # 计算二维码中心相对于图片中心的位置，并进行归一化，使得在边框处为-1或1，中心为0
+                            aruco_in_camera = 2 * (center_marker - center_image) / np.array([width, height])
+                            aruco_in_camera = aruco_in_camera.tolist()
+                            aruco_in_camera[1] = -aruco_in_camera[1]
+                            # 更新参数
+                            app_data["aruco_in_camera"] = [aruco_in_camera]
+                            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.78833,
+                                                                                np.array(app_data["camera_k"]),
+                                                                                np.array(app_data["camera_dis_coeffs"]))
+                            cv2.drawFrameAxes(img, np.array(app_data["camera_k"]),
+                                              np.array(app_data["camera_dis_coeffs"]),
+                                              rvec[0, :, :], tvec[0, :, :], 0.03)
+                            # 在二维码的附近画框
+                            cv2.aruco.drawDetectedMarkers(img, corners, ids)
+                            cv2.rectangle(img, (10, 10), (500, 150), (255, 255, 255), -1)
+                            # 显示ID，rvec,tvec, 旋转向量和平移向量
+                            # cv2.putText(img, "Id: " + str(ids), (10, 40),
+                            #             font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                            # cv2.putText(img, "rvec: " + str(rvec[0, :, :]), (10, 70),
+                            #             font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                            # cv2.putText(img, "tvec: " + str(tvec[0, :, :]), (10, 100),
+                            #             font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                            # 更新位置
+                            app_data['drone_xyz_of_aruco'] = [list(tvec[0, :, :][0])]
+                        except Exception as e:
+                            print(e)
+
                     h, w, ch = img.shape
                     qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
                     self.changePixmap.emit(qt_img)
@@ -108,7 +166,10 @@ class main_win(QMainWindow, fly_window):
         self.video_th.start()
 
     def set_image(self, image):
-        self.label.setPixmap(QPixmap.fromImage(image).scaled(int(image.width() * 0.5), int(image.height() * 0.5)))
+        self.label.clear()
+        self.pix = QPixmap(image).scaled(self.label.width(), self.label.height())
+        self.label.setPixmap(self.pix)
+        self.label.setScaledContents(True)
 
     def drone_forward_add_pushButton_event(self):
         global app_data
@@ -164,7 +225,7 @@ class main_win(QMainWindow, fly_window):
                 # 可以更新气压计高度
                 now_height_m = 0
                 async for position in drone1.telemetry.position():
-                    self.print_log(f"当前气压计高度: {position.relative_altitude_m.__round__(2): <4}m")
+                    # self.print_log(f"当前气压计高度: {position.relative_altitude_m.__round__(2): <4}m")
                     app_data["drone_altitude"] = position.relative_altitude_m
                     now_height_m = position.relative_altitude_m
                     break
@@ -253,7 +314,7 @@ class main_win(QMainWindow, fly_window):
         app_data['limit_height_m'] = self.limit_height_m_doubleSpinBox.text()
         self.print_log(f"修改响应参数limit_height_m:{app_data['limit_height_m']}")
 
-    def print_log(self, text):
+    def print_log(self, *text):
         self.textBrowser.append(f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}"
                                 f" -- {text}")
 
@@ -269,8 +330,8 @@ class main_win(QMainWindow, fly_window):
         app_data["drone_yawspeed_deg_s"] = float(self.drone_yawspeed_deg_s_doubleSpinBox.text())
         app_data["drone_step_size_m_s"] = float(self.drone_step_size_m_s_doubleSpinBox.text())
         app_data["drone_response_time_s"] = float(self.drone_response_time_s_doubleSpinBox.text())
-        app_data["camera_k"] = self.camera_k_lineEdit.text()
-        app_data["camera_dis_coeffs"] = self.camera_dis_coeffs_lineEdit.text()
+        app_data["camera_k"] = json.loads(self.camera_k_lineEdit.text())
+        app_data["camera_dis_coeffs"] = json.loads(self.camera_dis_coeffs_lineEdit.text())
         app_data["limit_height_m"] = float(self.limit_height_m_doubleSpinBox.text())
         # 将全局变量中的值写到gui中
         # 目前使用一个二维码
@@ -280,9 +341,9 @@ class main_win(QMainWindow, fly_window):
         # 在相机中，二维码的位置，目前使用第一个二维码
         self.aruco_in_camera_label.setText('x:{: <4}%,y:{: <4}%'.format(
             *map(lambda x: round(float(x), 4), app_data["aruco_in_camera"][0])))
-        self.drone_real_position_label.setText('x:{: <4}%,y:{: <4}%,z:{: <4}m'.format(
+        self.drone_real_position_label.setText('x:{: <4}m,y:{: <4}m,z:{: <4}m'.format(
             *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
-        self.drone_altitude_label.setText('{: <4}m'.format(float(app_data["drone_altitude"])))
+        self.drone_altitude_label.setText('{: <4}m'.format(float(app_data["drone_altitude"]).__round__(3)))
         self.test_connect_status_label.setText(app_data["test_connect_status"])
         self.drone_control_xy_label.setText('x:{: <4}m/s\ny:{: <4}m/s'.format(float(app_data["drone_forward_m_s"]),
                                                                               float(app_data["drone_right_m_s"])))
