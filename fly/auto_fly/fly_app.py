@@ -44,13 +44,13 @@ app_data = {
     "test_connect_status": "status",  # 连接成功，连接失败，可以启动，不能启动
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
     "image_and_data_get_url": "http://192.168.1.216:8000",
+    "drone_is_auto_search_aruco": False,  # 无人机是否自动搜寻二维码，并且停在上空
 }
 
 drone1: System = System()
 # 识别二维码的初始化
 parameters = cv2.aruco.DetectorParameters()
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 class VideoThread(QThread):
@@ -103,18 +103,18 @@ class VideoThread(QThread):
                         aruco_in_camera[1] = -aruco_in_camera[1]
                         # 更新参数
                         app_data["aruco_in_camera"] = [aruco_in_camera]
+                        # 获取识别后的坐标
                         rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.78833,
                                                                             np.array(app_data["camera_k"]),
                                                                             np.array(app_data["camera_dis_coeffs"]))
+                        # 画轴
                         cv2.drawFrameAxes(img, np.array(app_data["camera_k"]),
                                           np.array(app_data["camera_dis_coeffs"]),
                                           rvec[0, :, :], tvec[0, :, :], 0.03)
-                        # 在二维码的附近画框
+                        # 画框
                         cv2.aruco.drawDetectedMarkers(img, corners, ids)
-                        cv2.rectangle(img, (10, 10), (500, 150), (255, 255, 255), -1)
                         # 更新位置
                         app_data['drone_xyz_of_aruco'] = [list(tvec[0, :, :][0])]
-
                     h, w, ch = img.shape
                     qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
                     self.changePixmap.emit(qt_img)
@@ -133,6 +133,7 @@ class main_win(QMainWindow, fly_window):
         self.drone_forward_sub_pushButton.clicked.connect(self.drone_forward_sub_pushButton_event)
         self.drone_right_sub_pushButton.clicked.connect(self.drone_right_sub_pushButton_event)
         self.drone_right_add_pushButton.clicked.connect(self.drone_right_add_pushButton_event)
+        self.drone_search_aruco_pushButton.clicked.connect(self.drone_search_aruco_pushButton_event)
         # doubleSpinBox修改事件
         self.drone_forward_m_s_doubleSpinBox.valueChanged.connect(self.drone_forward_m_s_doubleSpinBox_event)
         self.drone_right_m_s_doubleSpinBox.valueChanged.connect(self.drone_right_m_s_doubleSpinBox_event)
@@ -160,6 +161,36 @@ class main_win(QMainWindow, fly_window):
         self.pix = QPixmap(image).scaled(self.label.width(), self.label.height())
         self.label.setPixmap(self.pix)
         self.label.setScaledContents(True)
+
+    def drone_search_aruco_pushButton_event(self):
+        global app_data
+        if app_data["drone_is_auto_search_aruco"]:
+            app_data["drone_is_auto_search_aruco"] = False
+            self.drone_search_status_label.setText("自动悬停关闭")
+            return
+        # 首先确保二维码在画面中，不在画面中，提示用户不能进行
+        # 获取QLabel的Pixmap
+        pixmap = self.label.pixmap()
+        # 将QPixmap转换为QImage
+        qimage = pixmap.toImage()
+        # 获取QImage宽高
+        width = qimage.width()
+        height = qimage.height()
+        # 获取QImage的bytearray，并reshape为(height, width, 4)
+        ptr = qimage.bits()
+        ptr.setsize(height * width * 4)
+        arr = np.frombuffer(ptr, np.uint8).reshape((height, width, 4))
+        # 将图像转换为OpenCV格式
+        gray_img = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
+        # 获取图像的框，id，rejectedImgPoints
+        corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray_img, aruco_dict, parameters=parameters)
+        if len(corners) > 0:
+            app_data["drone_is_auto_search_aruco"] = True
+            self.drone_search_status_label.setText("启动自动悬停")
+            self.drone_search_aruco_pushButton.setText("关闭悬停")
+        else:
+            app_data["drone_is_auto_search_aruco"] = False
+            self.drone_search_status_label.setText("未检测到二维码")
 
     def drone_forward_add_pushButton_event(self):
         global app_data
@@ -210,6 +241,7 @@ class main_win(QMainWindow, fly_window):
         try:
             while True:
                 if not app_data["drone_is_running"]:
+                    app_data["drone_is_auto_search_aruco"] = False
                     break
                 await asyncio.sleep(float(app_data["drone_response_time_s"]))
                 # 可以更新气压计高度
@@ -219,20 +251,37 @@ class main_win(QMainWindow, fly_window):
                     app_data["drone_altitude"] = position.relative_altitude_m
                     now_height_m = position.relative_altitude_m
                     break
-                # 进行无人机的额飞行控制
+                # 进行无人机的飞行控制
                 limit_height_m = float(app_data["limit_height_m"])  # 无人机的限制高度
-
                 setup_speed_hight = abs(now_height_m - limit_height_m) * 3
                 if now_height_m > limit_height_m:
                     app_data["drone_down_m_s"] = setup_speed_hight
                 else:
                     app_data["drone_down_m_s"] = -setup_speed_hight
 
+                # 自动在二维码上空飞行
+                if app_data["drone_is_auto_search_aruco"]:
+                    setup_speed_0 = abs(app_data["aruco_in_camera"][0][0] - 0) * 1
+                    # 差距越大越要向那个地方飞，因为二维码是相对于无人机的
+                    if app_data["aruco_in_camera"][0][0] > 0:  # x -> left,right
+                        app_data["drone_right_m_s"] = setup_speed_0
+                    else:
+                        app_data["drone_right_m_s"] = -setup_speed_0
+                    setup_speed_1 = abs(app_data["aruco_in_camera"][0][1] - 0) * 1
+                    if app_data["aruco_in_camera"][0][1] > 0:  # y -> forward,back
+                        app_data["drone_forward_m_s"] = setup_speed_1
+                    else:
+                        app_data["drone_forward_m_s"] = -setup_speed_1
+
                 v_list = [float(app_data["drone_forward_m_s"]), float(app_data["drone_right_m_s"]),
                           float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]
                 await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
-                self.print_log("无人机自主飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
-                    *map(lambda x: round(x, 4), v_list)))
+                if app_data["drone_is_auto_search_aruco"]:
+                    self.print_log("无人机自主悬停飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
+                        *map(lambda x: round(x, 4), v_list)))
+                else:
+                    self.print_log("当前飞行控制:前后:{: <4}m/s,左右:{: <4}m/s,上下:{: <4}m/s".format(
+                        *map(lambda x: round(x, 4), v_list)))
         except OffboardError as e:
             self.print_log(f"启动非车载模式失败，错误代码为: {e._result.result}")
         finally:
@@ -305,8 +354,12 @@ class main_win(QMainWindow, fly_window):
         self.print_log(f"修改响应参数limit_height_m:{app_data['limit_height_m']}")
 
     def print_log(self, *text):
-        self.textBrowser.append(f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}"
-                                f" -- {text}")
+        if len(text) == 1:
+            self.textBrowser.append(f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}"
+                                    f" -- {text[0]}")
+        else:
+            self.textBrowser.append(f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}"
+                                    f" -- {list(text)}")
 
     def fresh_data(self):
         # 将gui的数据写道全局变量中
