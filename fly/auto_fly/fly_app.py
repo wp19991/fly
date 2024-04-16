@@ -88,42 +88,32 @@ class VideoThread(QThread):
                     # 获取图像的框，id，rejectedImgPoints
                     corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
                     if len(corners) > 0:
-                        try:
-                            # 二维码在相机画面中的位置，中心点为0，0，右上为正
-                            # 假设corners是检测到的第一个aruco marker的角点位置
-                            corner = corners[0][0]
-                            # 计算二维码的中心点位置
-                            center_marker = np.mean(corner, axis=0)
-                            # 获取图片的大小
-                            height, width = gray.shape
-                            # 计算图片的中心点位置
-                            center_image = np.array([width / 2, height / 2])
-                            # 计算二维码中心相对于图片中心的位置，并进行归一化，使得在边框处为-1或1，中心为0
-                            aruco_in_camera = 2 * (center_marker - center_image) / np.array([width, height])
-                            aruco_in_camera = aruco_in_camera.tolist()
-                            aruco_in_camera[1] = -aruco_in_camera[1]
-                            # 更新参数
-                            app_data["aruco_in_camera"] = [aruco_in_camera]
-                            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.78833,
-                                                                                np.array(app_data["camera_k"]),
-                                                                                np.array(app_data["camera_dis_coeffs"]))
-                            cv2.drawFrameAxes(img, np.array(app_data["camera_k"]),
-                                              np.array(app_data["camera_dis_coeffs"]),
-                                              rvec[0, :, :], tvec[0, :, :], 0.03)
-                            # 在二维码的附近画框
-                            cv2.aruco.drawDetectedMarkers(img, corners, ids)
-                            cv2.rectangle(img, (10, 10), (500, 150), (255, 255, 255), -1)
-                            # 显示ID，rvec,tvec, 旋转向量和平移向量
-                            # cv2.putText(img, "Id: " + str(ids), (10, 40),
-                            #             font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-                            # cv2.putText(img, "rvec: " + str(rvec[0, :, :]), (10, 70),
-                            #             font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-                            # cv2.putText(img, "tvec: " + str(tvec[0, :, :]), (10, 100),
-                            #             font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-                            # 更新位置
-                            app_data['drone_xyz_of_aruco'] = [list(tvec[0, :, :][0])]
-                        except Exception as e:
-                            print(e)
+                        # 二维码在相机画面中的位置，中心点为0，0，右上为正
+                        # 假设corners是检测到的第一个aruco marker的角点位置
+                        corner = corners[0][0]
+                        # 计算二维码的中心点位置
+                        center_marker = np.mean(corner, axis=0)
+                        # 获取图片的大小
+                        height, width = gray.shape
+                        # 计算图片的中心点位置
+                        center_image = np.array([width / 2, height / 2])
+                        # 计算二维码中心相对于图片中心的位置，并进行归一化，使得在边框处为-1或1，中心为0
+                        aruco_in_camera = 2 * (center_marker - center_image) / np.array([width, height])
+                        aruco_in_camera = aruco_in_camera.tolist()
+                        aruco_in_camera[1] = -aruco_in_camera[1]
+                        # 更新参数
+                        app_data["aruco_in_camera"] = [aruco_in_camera]
+                        rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.78833,
+                                                                            np.array(app_data["camera_k"]),
+                                                                            np.array(app_data["camera_dis_coeffs"]))
+                        cv2.drawFrameAxes(img, np.array(app_data["camera_k"]),
+                                          np.array(app_data["camera_dis_coeffs"]),
+                                          rvec[0, :, :], tvec[0, :, :], 0.03)
+                        # 在二维码的附近画框
+                        cv2.aruco.drawDetectedMarkers(img, corners, ids)
+                        cv2.rectangle(img, (10, 10), (500, 150), (255, 255, 255), -1)
+                        # 更新位置
+                        app_data['drone_xyz_of_aruco'] = [list(tvec[0, :, :][0])]
 
                     h, w, ch = img.shape
                     qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
