@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>804</width>
-    <height>637</height>
+    <width>802</width>
+    <height>603</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,8 +22,8 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>100</y>
-      <width>328</width>
+      <y>320</y>
+      <width>451</width>
       <height>161</height>
      </rect>
     </property>
@@ -350,9 +350,9 @@
    <widget class="QGroupBox" name="groupBox_3">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>100</y>
-      <width>431</width>
+      <x>10</x>
+      <y>170</y>
+      <width>451</width>
       <height>151</height>
      </rect>
     </property>
@@ -514,9 +514,9 @@
    <widget class="QGroupBox" name="groupBox_5">
     <property name="geometry">
      <rect>
-      <x>11</x>
+      <x>470</x>
       <y>270</y>
-      <width>331</width>
+      <width>321</width>
       <height>191</height>
      </rect>
     </property>
@@ -733,8 +733,8 @@ y:{}m/s</string>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>460</x>
-      <y>250</y>
+      <x>470</x>
+      <y>20</y>
       <width>320</width>
       <height>240</height>
      </rect>
@@ -747,7 +747,7 @@ y:{}m/s</string>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>500</y>
+      <y>490</y>
       <width>781</width>
       <height>101</height>
      </rect>
@@ -762,8 +762,8 @@ y:{}m/s</string>
    <widget class="QPushButton" name="get_video_farme_pushButton">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>270</y>
+      <x>370</x>
+      <y>240</y>
       <width>81</width>
       <height>23</height>
      </rect>
@@ -777,7 +777,7 @@ y:{}m/s</string>
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>454</width>
+      <width>451</width>
       <height>81</height>
      </rect>
     </property>
@@ -871,9 +871,9 @@ y:{}m/s</string>
    <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
      <rect>
-      <x>480</x>
-      <y>10</y>
-      <width>301</width>
+      <x>10</x>
+      <y>90</y>
+      <width>451</width>
       <height>76</height>
      </rect>
     </property>
@@ -938,16 +938,6 @@ y:{}m/s</string>
      </item>
     </layout>
    </widget>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>804</width>
-     <height>22</height>
-    </rect>
-   </property>
   </widget>
  </widget>
  <resources>
