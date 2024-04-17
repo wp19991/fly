@@ -239,7 +239,7 @@ class Ui_fly_app(object):
         self.drone_altitude_label.setObjectName("drone_altitude_label")
         self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.drone_altitude_label)
         self.groupBox_5 = QtWidgets.QGroupBox(self.centralwidget)
-        self.groupBox_5.setGeometry(QtCore.QRect(470, 270, 321, 191))
+        self.groupBox_5.setGeometry(QtCore.QRect(470, 280, 321, 191))
         self.groupBox_5.setObjectName("groupBox_5")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.groupBox_5)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
