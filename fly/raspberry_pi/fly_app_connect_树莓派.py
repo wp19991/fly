@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import datetime
+import json
 import sys
 import os
 import time
@@ -130,20 +131,23 @@ class main_win(QMainWindow, fly_window):
         self.get_data_th.start()
 
     def get_video_farme_pushButton_event(self):
-        url1 = f'{app_data["image_and_data_get_url"]}/video_farme'
-        res = requests.get(url1).text
-        frame_encoded_bytes = base64.b64decode(res)
-        img_shape = (480, 640, 3)
-        img_dtype = np.uint8
-        frame_decoded = np.frombuffer(frame_encoded_bytes, dtype=img_dtype).reshape(img_shape)
-        ret, buffer = cv2.imencode('.jpg', frame_decoded)
-        img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
-        h, w, ch = img.shape
-        qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
-        self.label.clear()
-        self.pix = QPixmap(qt_img).scaled(self.label.width(), self.label.height())
-        self.label.setPixmap(self.pix)
-        self.label.setScaledContents(True)
+        try:
+            url1 = f'{app_data["image_and_data_get_url"]}/video_farme'
+            res = requests.get(url1).text
+            frame_encoded_bytes = base64.b64decode(res)
+            img_shape = (480, 640, 3)
+            img_dtype = np.uint8
+            frame_decoded = np.frombuffer(frame_encoded_bytes, dtype=img_dtype).reshape(img_shape)
+            ret, buffer = cv2.imencode('.jpg', frame_decoded)
+            img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+            h, w, ch = img.shape
+            qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
+            self.label.clear()
+            self.pix = QPixmap(qt_img).scaled(self.label.width(), self.label.height())
+            self.label.setPixmap(self.pix)
+            self.label.setScaledContents(True)
+        except Exception as e:
+            self.print_log(e)
 
     def drone_kill_pushButton_event(self):
         global app_data
@@ -230,9 +234,9 @@ class main_win(QMainWindow, fly_window):
                 await asyncio.sleep(float(app_data["drone_response_time_s"]))
                 # 可以更新气压计高度
                 now_height_m = 0
-                async for position in drone1.telemetry.position():
-                    app_data["drone_altitude"] = position.relative_altitude_m
-                    now_height_m = position.relative_altitude_m
+                async for position in drone1.telemetry.altitude():
+                    app_data["drone_altitude"] = position.altitude_local_m
+                    now_height_m = position.altitude_local_m
                     break
                 # 进行无人机的飞行控制
                 limit_height_m = float(app_data["limit_height_m"])  # 无人机的限制高度
@@ -301,6 +305,21 @@ class main_win(QMainWindow, fly_window):
                 app_data['test_connect_status'] = "连接失败"
                 self.print_log("无人机连接失败")
         self.print_log("无人机连接成功")
+        # 保存无人机参数
+        all_params = await drone1.param.get_all_params()
+        data_dict_list = []
+        for param in all_params.int_params:
+            data_dict_list.append({"name": param.name, "value": param.value})
+        for param in all_params.float_params:
+            data_dict_list.append({"name": param.name, "value": param.value})
+        with open("params.json", "w", encoding='utf-8') as file:
+            file.write(json.dumps(data_dict_list, ensure_ascii=False, indent=4))
+        # 更新气压计高度
+        async for position in drone1.telemetry.altitude():
+            # print(position)
+            # altitude_local_m: 0.09947194904088974, altitude_relative_m: 0.09947194904088974
+            app_data["drone_altitude"] = position.altitude_local_m
+            break
         async for is_ready in drone1.telemetry.health():
             if is_ready.is_armable:
                 app_data['test_connect_status'] = "可以启动"
@@ -309,6 +328,7 @@ class main_win(QMainWindow, fly_window):
                 app_data['test_connect_status'] = "不能启动"
                 self.print_log("无人机启动失败，当前不能启动，请检查无人机状态")
                 self.print_log(str(is_ready))
+                break
 
     def drone_forward_m_s_doubleSpinBox_event(self):
         global app_data
