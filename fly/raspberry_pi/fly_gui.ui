@@ -728,7 +728,7 @@ y:{}m/s</string>
      </sizepolicy>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>9</x>
@@ -756,7 +756,7 @@ y:{}m/s</string>
           <item>
            <widget class="QLineEdit" name="mavsdk_server_address_lineEdit">
             <property name="text">
-             <string>192.168.1.216</string>
+             <string>192.168.1.112</string>
             </property>
            </widget>
           </item>
