@@ -441,9 +441,9 @@ class Ui_fly_app(object):
         self.test_connect_status_label.setText(_translate("fly_app", "status"))
         self.groupBox.setTitle(_translate("fly_app", "相机参数设置"))
         self.label_2.setText(_translate("fly_app", "k"))
-        self.camera_k_lineEdit.setText(_translate("fly_app", "[[454.6843330573585,0.0,424.0],[0.0,454.6843330573585,240.0],[0.0,0.0,1]]"))
+        self.camera_k_lineEdit.setText(_translate("fly_app", "[[391.95377974, 0.0, 335.17043033], [0.0, 377.71297362, 245.03757622], [0.0, 0.0, 1.0]]"))
         self.camera_k_lineEdit.setPlaceholderText(_translate("fly_app", "[[,,],[,,],[,,]]"))
         self.label_3.setText(_translate("fly_app", "dist_coeffs"))
-        self.camera_dis_coeffs_lineEdit.setText(_translate("fly_app", "[0.0001,0.0001,0.0001,0.0001,0]"))
+        self.camera_dis_coeffs_lineEdit.setText(_translate("fly_app", "[0.04714445, -0.07145486, 0.00588382, 0.00876541, 0.07204812]"))
         self.camera_dis_coeffs_lineEdit.setPlaceholderText(_translate("fly_app", "[,,,,]"))
 from res import res_rc

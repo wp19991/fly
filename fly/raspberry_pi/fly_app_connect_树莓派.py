@@ -6,13 +6,11 @@ import os
 import time
 
 import cv2
-import numpy as np
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QImage, QPixmap
 from qasync import QEventLoop, QApplication, asyncSlot
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import QTimer, QThread, pyqtSignal
+from PyQt5.QtCore import QTimer, QThread
 
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
@@ -38,6 +36,7 @@ app_data = {
     "drone_xyz_of_aruco": [[0, 0, 0]],  # m 在二维码下无人机的位置
     "drone_xyz_rvec_of_aruco": [[0, 0, 0]],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
     "aruco_in_camera": [[0, 0]],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
+    "time_sub_microseconds": 0.,  # 从得到的是否到完成识别的时间差值
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
     "drone_altitude": 0.,  # 无人机的气压计高度
@@ -53,6 +52,27 @@ drone1: System = System()
 # 识别二维码的初始化
 parameters = cv2.aruco.DetectorParameters()
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+
+
+class GetDataThread(QThread):
+    def run(self):
+        while True:
+            self.fresh()
+            time.sleep(0.1)
+
+    def fresh(self):
+        global app_data
+        # 获取位置的网址
+        url1 = f'{app_data["image_and_data_get_url"]}/app_data'
+        res = requests.get(url1).json()
+        app_data["aruco_in_camera"] = res["aruco_in_camera"]
+        app_data["drone_xyz_of_aruco"] = res["drone_xyz_of_aruco"]
+        app_data["drone_xyz_rvec_of_aruco"] = res["drone_xyz_rvec_of_aruco"]
+        app_data["time_sub_microseconds"] = res["time_sub_microseconds"]
+        # self.camera_k_lineEdit.setText(str(res["camera_k"]))
+        # self.camera_dis_coeffs_lineEdit.setText(str(res["camera_dis_coeffs"]))
+        app_data["drone_real_position"] = res["drone_real_position"]
+        app_data["drone_real_orientation"] = res["drone_real_orientation"]
 
 
 class main_win(QMainWindow, fly_window):
@@ -88,27 +108,9 @@ class main_win(QMainWindow, fly_window):
         # 启动定时器
         self.fresh_data_timer.start()
 
-        # 创建一个QTimer对象
-        self.fresh_position_data_timer = QTimer(self)
-        # 设置定时器每50ms触发一次
-        self.fresh_position_data_timer.setInterval(50)
-        # 将定时器的timeout信号连接到自定义的函数，即每50ms会调用一次
-        self.fresh_position_data_timer.timeout.connect(self.change_drone_data)
-        # 启动定时器
-        self.fresh_position_data_timer.start()
-
-    def change_drone_data(self):
-        global app_data
-        # 获取位置的网址
-        url1 = f'{app_data["image_and_data_get_url"]}/app_data'
-        res = requests.get(url1).json()
-        app_data["aruco_in_camera"] = res["aruco_in_camera"]
-        app_data["drone_xyz_of_aruco"] = res["drone_xyz_of_aruco"]
-        app_data["drone_xyz_rvec_of_aruco"] = res["drone_xyz_rvec_of_aruco"]
-        self.camera_k_lineEdit.setText(str(res["camera_k"]))
-        self.camera_dis_coeffs_lineEdit.setText(str(res["camera_dis_coeffs"]))
-        app_data["drone_real_position"] = res["drone_real_position"]
-        app_data["drone_real_orientation"] = res["drone_real_orientation"]
+        # 从网络获取无人机识别二维码参数的线程
+        self.get_data_th = GetDataThread(self)
+        self.get_data_th.start()
 
     def drone_kill_pushButton_event(self):
         global app_data
@@ -232,13 +234,10 @@ class main_win(QMainWindow, fly_window):
                         *map(lambda x: round(x, 4), v_list)))
         except OffboardError as e:
             self.print_log(f"启动非车载模式失败，错误代码为: {e._result.result}")
-        # 0.25m/s下降
-        # v_list = [0.001, 0.001, 0.25, 0.001]
-        # await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
         await drone1.action.land()
         self.print_log("无人机降落，等待15s...")
-        for i in range(15):
-            await asyncio.sleep(1)
+        for i in range(30):
+            await asyncio.sleep(0.5)
             if app_data['drone_is_kill_fly']:
                 app_data["drone_is_auto_search_aruco"] = False
                 self.drone_search_status_label.setText("悬停关闭")
@@ -356,8 +355,9 @@ class main_win(QMainWindow, fly_window):
         # 将全局变量中的值写到gui中
         # 目前使用一个二维码
         # TODO 如果有多个，可以进行计算融合
-        self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m'.format(
-            *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0])))
+        self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m({: <4}ms)'.format(
+            *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0]),
+            (app_data["time_sub_microseconds"] / 1000).__round__(2)))
         # 在相机中，二维码的位置，目前使用第一个二维码
         self.aruco_in_camera_label.setText('x:{: <7}%,y:{: <7}%'.format(
             *map(lambda x: round(float(x), 4), app_data["aruco_in_camera"][0])))

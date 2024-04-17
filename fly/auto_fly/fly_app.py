@@ -308,8 +308,8 @@ class main_win(QMainWindow, fly_window):
         # await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
         await drone1.action.land()
         self.print_log("无人机降落，等待15s...")
-        for i in range(15):
-            await asyncio.sleep(1)
+        for i in range(30):
+            await asyncio.sleep(0.5)
             if app_data['drone_is_kill_fly']:
                 app_data["drone_is_auto_search_aruco"] = False
                 self.drone_search_status_label.setText("悬停关闭")
