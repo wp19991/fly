@@ -106,6 +106,10 @@ sudo apt-get install vlc
 
 ```shell
 cvlc v4l2:///dev/video0:width=640:height=480 :input-slave=alsa://hw:0,0 --sout "#transcode{vcodec=h264,vb=800,scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:rtp{sdp=rtsp://:8554/live.ts}"
+
+cvlc v4l2:///dev/video0:width=640:height=480 :input-slave=alsa://hw:0,0 --sout "#rtp{sdp=rtsp://:8554/live.ts}"
+
+cvlc v4l2:///dev/video0:width=640:height=480 --sout "#transcode{vcodec=h264,vb=400,scale=0.5}:rtp{sdp=rtsp://:8554/live.ts}"
 ```
 
 其中，"v4l2:///dev/video0"是电脑默认的摄像头设备，"width=640:height=480"是设置分辨率，"--sout"
