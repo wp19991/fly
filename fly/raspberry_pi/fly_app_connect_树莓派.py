@@ -1,13 +1,15 @@
 import asyncio
+import base64
 import datetime
-import json
 import sys
 import os
 import time
 
 import cv2
+import numpy as np
 import requests
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import QImage, QPixmap
 from qasync import QEventLoop, QApplication, asyncSlot
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QTimer, QThread
@@ -101,6 +103,7 @@ class main_win(QMainWindow, fly_window):
         self.drone_right_add_pushButton.clicked.connect(self.drone_right_add_pushButton_event)
         self.drone_search_aruco_pushButton.clicked.connect(self.drone_search_aruco_pushButton_event)
         self.drone_kill_pushButton.clicked.connect(self.drone_kill_pushButton_event)
+        self.get_video_farme_pushButton.clicked.connect(self.get_video_farme_pushButton_event)
         # doubleSpinBox修改事件
         self.drone_forward_m_s_doubleSpinBox.valueChanged.connect(self.drone_forward_m_s_doubleSpinBox_event)
         self.drone_right_m_s_doubleSpinBox.valueChanged.connect(self.drone_right_m_s_doubleSpinBox_event)
@@ -125,6 +128,22 @@ class main_win(QMainWindow, fly_window):
 
     def test_connect_data_url_pushButton_event(self):
         self.get_data_th.start()
+
+    def get_video_farme_pushButton_event(self):
+        url1 = f'{app_data["image_and_data_get_url"]}/video_farme'
+        res = requests.get(url1).text
+        frame_encoded_bytes = base64.b64decode(res)
+        img_shape = (480, 640, 3)
+        img_dtype = np.uint8
+        frame_decoded = np.frombuffer(frame_encoded_bytes, dtype=img_dtype).reshape(img_shape)
+        ret, buffer = cv2.imencode('.jpg', frame_decoded)
+        img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+        h, w, ch = img.shape
+        qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
+        self.label.clear()
+        self.pix = QPixmap(qt_img).scaled(self.label.width(), self.label.height())
+        self.label.setPixmap(self.pix)
+        self.label.setScaledContents(True)
 
     def drone_kill_pushButton_event(self):
         global app_data

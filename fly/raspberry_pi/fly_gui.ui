@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>804</width>
-    <height>605</height>
+    <height>637</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -733,10 +733,10 @@ y:{}m/s</string>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>279</y>
-      <width>431</width>
-      <height>171</height>
+      <x>460</x>
+      <y>250</y>
+      <width>320</width>
+      <height>240</height>
      </rect>
     </property>
     <property name="text">
@@ -747,7 +747,7 @@ y:{}m/s</string>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>470</y>
+      <y>500</y>
       <width>781</width>
       <height>101</height>
      </rect>
@@ -757,6 +757,19 @@ y:{}m/s</string>
       <horstretch>0</horstretch>
       <verstretch>0</verstretch>
      </sizepolicy>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="get_video_farme_pushButton">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>270</y>
+      <width>81</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>获取相机画面</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="groupBox_4">

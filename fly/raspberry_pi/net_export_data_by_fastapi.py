@@ -1,3 +1,4 @@
+import base64
 import datetime
 import threading
 import time
@@ -6,9 +7,10 @@ import numpy as np
 import uvicorn
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 
 import cv2
+from starlette.responses import JSONResponse
 
 app = FastAPI()
 
@@ -32,10 +34,11 @@ app_data = {
 # 识别二维码的初始化
 parameters = cv2.aruco.DetectorParameters()
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+video_frame = b""
 
 
 def main_for_video():
-    global app_data
+    global app_data, video_frame
     cap = cv2.VideoCapture(0)
     while True:
         time.sleep(0.1)
@@ -85,6 +88,7 @@ def main_for_video():
         end_time = datetime.datetime.now()
         app_data["get_img_aruco_time_stamp"] = f"{end_time.strftime('[%Y-%m-%d %H:%M:%S]')}"
         app_data["time_sub_microseconds"] = (end_time - start_time).microseconds
+        video_frame = img.tobytes()
 
 
 @app.get('/app_data')
@@ -92,6 +96,12 @@ def drone_data():
     global app_data
     json_compatible_item_data = jsonable_encoder(app_data)
     return JSONResponse(content=json_compatible_item_data)
+
+@app.get('/video_farme')
+def drone_video_farme_data():
+    global video_frame
+    frame_encoded_string = base64.b64encode(video_frame).decode()
+    return PlainTextResponse(content=frame_encoded_string)
 
 
 if __name__ == '__main__':
