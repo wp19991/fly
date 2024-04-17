@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>604</height>
+    <width>804</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,8 +21,8 @@
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>11</x>
-      <y>102</y>
+      <x>10</x>
+      <y>100</y>
       <width>328</width>
       <height>161</height>
      </rect>
@@ -319,7 +319,7 @@
           <double>10.000000000000000</double>
          </property>
          <property name="value">
-          <double>5.000000000000000</double>
+          <double>1.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -351,9 +351,9 @@
     <property name="geometry">
      <rect>
       <x>350</x>
-      <y>110</y>
+      <y>100</y>
       <width>431</width>
-      <height>111</height>
+      <height>151</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -365,15 +365,46 @@
     <property name="title">
      <string>响应参数</string>
     </property>
-    <layout class="QFormLayout" name="formLayout_3">
+    <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
+      <widget class="QLabel" name="label_28">
+       <property name="toolTip">
+        <string>树莓派的远程传递数据的端口地址</string>
+       </property>
+       <property name="text">
+        <string>data_url</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_9">
+       <item>
+        <widget class="QLineEdit" name="image_and_data_get_url_lineEdit">
+         <property name="toolTip">
+          <string>树莓派的远程传递数据的端口地址</string>
+         </property>
+         <property name="text">
+          <string>http://192.168.1.112:8000</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="test_connect_data_url_pushButton">
+         <property name="text">
+          <string>测试连接</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
       <widget class="QLabel" name="label_7">
        <property name="text">
         <string>aruco坐标系下</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="1" column="1">
       <widget class="QLabel" name="drone_xyz_of_aruco_label">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -394,14 +425,14 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
+     <item row="2" column="0">
       <widget class="QLabel" name="label_11">
        <property name="text">
         <string>aruco相机画面中位置</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="2" column="1">
       <widget class="QLabel" name="aruco_in_camera_label">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -422,14 +453,14 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="label_9">
        <property name="text">
         <string>无人机真实的位置</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="3" column="1">
       <widget class="QLabel" name="drone_real_position_label">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -450,14 +481,14 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="4" column="0">
       <widget class="QLabel" name="label_13">
        <property name="text">
         <string>无人机气压计高度</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="4" column="1">
       <widget class="QLabel" name="drone_altitude_label">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -703,9 +734,9 @@ y:{}m/s</string>
     <property name="geometry">
      <rect>
       <x>350</x>
-      <y>220</y>
-      <width>424</width>
-      <height>240</height>
+      <y>279</y>
+      <width>431</width>
+      <height>171</height>
      </rect>
     </property>
     <property name="text">
@@ -717,7 +748,7 @@ y:{}m/s</string>
      <rect>
       <x>10</x>
       <y>470</y>
-      <width>771</width>
+      <width>781</width>
       <height>101</height>
      </rect>
     </property>
@@ -728,156 +759,168 @@ y:{}m/s</string>
      </sizepolicy>
     </property>
    </widget>
-   <widget class="QWidget" name="layoutWidget">
+   <widget class="QGroupBox" name="groupBox_4">
     <property name="geometry">
      <rect>
-      <x>9</x>
-      <y>9</y>
-      <width>771</width>
-      <height>86</height>
+      <x>10</x>
+      <y>10</y>
+      <width>454</width>
+      <height>81</height>
      </rect>
     </property>
-    <layout class="QHBoxLayout" name="horizontalLayout_9">
-     <item>
-      <widget class="QGroupBox" name="groupBox_4">
-       <property name="title">
-        <string>无人机连接参数</string>
+    <property name="title">
+     <string>无人机连接参数</string>
+    </property>
+    <layout class="QFormLayout" name="formLayout_4">
+     <item row="0" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_6">
+       <item>
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>mavsdk_server_address</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="mavsdk_server_address_lineEdit">
+         <property name="text">
+          <string>192.168.1.112</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>port</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="mavsdk_server_port_lineEdit">
+         <property name="text">
+          <string>50051</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <item>
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>system_address(drop)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="system_address_lineEdit">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>udp://:14540</string>
+         </property>
+         <property name="dragEnabled">
+          <bool>false</bool>
+         </property>
+         <property name="readOnly">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <item>
+        <widget class="QPushButton" name="test_connect_pushButton">
+         <property name="text">
+          <string>测试连接</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="test_connect_status_label">
+         <property name="text">
+          <string>status</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>480</x>
+      <y>10</y>
+      <width>301</width>
+      <height>76</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>相机参数设置</string>
+    </property>
+    <layout class="QFormLayout" name="formLayout_3">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="toolTip">
+        <string>相机的内参k</string>
        </property>
-       <layout class="QFormLayout" name="formLayout_4">
-        <item row="0" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_6">
-          <item>
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>mavsdk_server_address</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="mavsdk_server_address_lineEdit">
-            <property name="text">
-             <string>192.168.1.112</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="0" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QLabel" name="label_12">
-            <property name="text">
-             <string>port</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="mavsdk_server_port_lineEdit">
-            <property name="text">
-             <string>50051</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_7">
-          <item>
-           <widget class="QLabel" name="label_14">
-            <property name="text">
-             <string>system_address(drop)</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="system_address_lineEdit">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>udp://:14540</string>
-            </property>
-            <property name="dragEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="readOnly">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_8">
-          <item>
-           <widget class="QPushButton" name="test_connect_pushButton">
-            <property name="text">
-             <string>测试连接</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="test_connect_status_label">
-            <property name="text">
-             <string>status</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="text">
+        <string>k</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="indent">
+        <number>-1</number>
+       </property>
       </widget>
      </item>
-     <item>
-      <widget class="QGroupBox" name="groupBox">
-       <property name="title">
-        <string>相机参数设置</string>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="camera_k_lineEdit">
+       <property name="toolTip">
+        <string>相机的内参k</string>
        </property>
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="text">
-           <string>k</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="indent">
-           <number>-1</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="camera_k_lineEdit">
-          <property name="text">
-           <string>[[391.95377974, 0.0, 335.17043033], [0.0, 377.71297362, 245.03757622], [0.0, 0.0, 1.0]]</string>
-          </property>
-          <property name="placeholderText">
-           <string>[[,,],[,,],[,,]]</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>dist_coeffs</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="camera_dis_coeffs_lineEdit">
-          <property name="text">
-           <string>[0.04714445, -0.07145486, 0.00588382, 0.00876541, 0.07204812]</string>
-          </property>
-          <property name="placeholderText">
-           <string>[,,,,]</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <property name="text">
+        <string>[[391.95377974, 0.0, 335.17043033], [0.0, 377.71297362, 245.03757622], [0.0, 0.0, 1.0]]</string>
+       </property>
+       <property name="placeholderText">
+        <string>[[,,],[,,],[,,]]</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="toolTip">
+        <string>相机的内参dis_coeffs</string>
+       </property>
+       <property name="text">
+        <string>dist_coeffs</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="camera_dis_coeffs_lineEdit">
+       <property name="toolTip">
+        <string>相机的内参dis_coeffs</string>
+       </property>
+       <property name="text">
+        <string>[0.04714445, -0.07145486, 0.00588382, 0.00876541, 0.07204812]</string>
+       </property>
+       <property name="placeholderText">
+        <string>[,,,,]</string>
+       </property>
       </widget>
      </item>
     </layout>
@@ -888,7 +931,7 @@ y:{}m/s</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>804</width>
      <height>22</height>
     </rect>
    </property>

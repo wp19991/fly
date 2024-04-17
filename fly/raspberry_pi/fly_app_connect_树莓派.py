@@ -57,7 +57,11 @@ aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 class GetDataThread(QThread):
     def run(self):
         while True:
-            self.fresh()
+            try:
+                self.fresh()
+            except Exception as e:
+                print(e)
+                break
             time.sleep(0.1)
 
     def fresh(self):
@@ -110,6 +114,9 @@ class main_win(QMainWindow, fly_window):
 
         # 从网络获取无人机识别二维码参数的线程
         self.get_data_th = GetDataThread(self)
+        self.test_connect_data_url_pushButton.clicked.connect(self.test_connect_data_url_pushButton_event)
+
+    def test_connect_data_url_pushButton_event(self):
         self.get_data_th.start()
 
     def drone_kill_pushButton_event(self):
@@ -124,7 +131,8 @@ class main_win(QMainWindow, fly_window):
             self.drone_search_aruco_pushButton.setText("启动悬停")
             return
         # 首先确保二维码在画面中，不在画面中，提示用户不能进行
-        if app_data["drone_xyz_of_aruco"][0][0] != 0 or app_data["drone_xyz_rvec_of_aruco"][0][1] != 0 \
+        if app_data["drone_xyz_of_aruco"][0][0] != 0 \
+                or app_data["drone_xyz_rvec_of_aruco"][0][1] != 0 \
                 or app_data["aruco_in_camera"][0][0] != 0:
             app_data["drone_is_auto_search_aruco"] = True
             self.drone_search_status_label.setText("启动自动悬停")
@@ -352,6 +360,7 @@ class main_win(QMainWindow, fly_window):
         app_data["camera_k"] = json.loads(self.camera_k_lineEdit.text())
         app_data["camera_dis_coeffs"] = json.loads(self.camera_dis_coeffs_lineEdit.text())
         app_data["limit_height_m"] = float(self.limit_height_m_doubleSpinBox.text())
+        app_data["image_and_data_get_url"] = self.image_and_data_get_url_lineEdit.text()
         # 将全局变量中的值写到gui中
         # 目前使用一个二维码
         # TODO 如果有多个，可以进行计算融合

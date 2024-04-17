@@ -65,12 +65,12 @@ def main_for_video():
             # 更新参数
             app_data["aruco_in_camera"] = [aruco_in_camera]
             # 获取识别后的坐标
-            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.052,
+            rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
+                                                                0.052,  # 二维码的实际大小m
                                                                 np.array(app_data["camera_k"]),
                                                                 np.array(app_data["camera_dis_coeffs"]))
             # 画轴
-            cv2.drawFrameAxes(img, np.array(app_data["camera_k"]),
-                              np.array(app_data["camera_dis_coeffs"]),
+            cv2.drawFrameAxes(img, np.array(app_data["camera_k"]), np.array(app_data["camera_dis_coeffs"]),
                               rvec[0, :, :], tvec[0, :, :], 0.03)
             # 画框
             cv2.aruco.drawDetectedMarkers(img, corners, ids)
