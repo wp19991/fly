@@ -22,12 +22,14 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # 运行无人机的时候更新这些参数
 app_data = {
-    "mavsdk_server_address": "",
-    "mavsdk_server_port": "",
-    "system_address": "",
+    # 可以修改下面5个默认的参数，在程序启动后会变成下面的参数
+    "mavsdk_server_address": "192.168.1.112",
+    "mavsdk_server_port": "50051",
+    "image_and_data_get_url": "http://192.168.1.112:8000",
+    "system_address": "udp://:14540",
+    "drone_down_m_s": -1,
     "drone_forward_m_s": 0.,
     "drone_right_m_s": 0.,
-    "drone_down_m_s": 1,
     "drone_yawspeed_deg_s": 0.,
     "drone_step_size_m_s": 0.2,
     "drone_response_time_s": 0.2,
@@ -43,7 +45,6 @@ app_data = {
     "limit_height_m": 1.,
     "test_connect_status": "status",  # 连接成功，连接失败，可以启动，不能启动
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
-    "image_and_data_get_url": "http://192.168.1.112:8000",
     "drone_is_auto_search_aruco": False,  # 无人机是否自动搜寻二维码，并且停在上空
     "drone_is_kill_fly": False,  # 是否直接关闭飞行的电机
 }
@@ -73,8 +74,8 @@ class GetDataThread(QThread):
         app_data["drone_xyz_of_aruco"] = res["drone_xyz_of_aruco"]
         app_data["drone_xyz_rvec_of_aruco"] = res["drone_xyz_rvec_of_aruco"]
         app_data["time_sub_microseconds"] = res["time_sub_microseconds"]
-        # self.camera_k_lineEdit.setText(str(res["camera_k"]))
-        # self.camera_dis_coeffs_lineEdit.setText(str(res["camera_dis_coeffs"]))
+        app_data["camera_k"] = res["camera_k"]
+        app_data["camera_dis_coeffs"] = res["camera_dis_coeffs"]
         app_data["drone_real_position"] = res["drone_real_position"]
         app_data["drone_real_orientation"] = res["drone_real_orientation"]
 
@@ -83,6 +84,12 @@ class main_win(QMainWindow, fly_window):
     def __init__(self):
         super(main_win, self).__init__()
         self.setupUi(self)
+        # 写一些默认参数到ui中，在程序启动后会变成app_data中的参数
+        self.mavsdk_server_address_lineEdit.setText(app_data["mavsdk_server_address"])
+        self.mavsdk_server_port_lineEdit.setText(app_data["mavsdk_server_port"])
+        self.image_and_data_get_url_lineEdit.setText(app_data["image_and_data_get_url"])
+        self.system_address_lineEdit.setText(app_data["system_address"])
+        self.drone_down_m_s_doubleSpinBox.setValue(app_data["drone_down_m_s"])
 
         # 绑定事件
         self.test_connect_pushButton.clicked.connect(self.test_connect_pushButton_event)
@@ -357,8 +364,11 @@ class main_win(QMainWindow, fly_window):
         app_data["drone_yawspeed_deg_s"] = float(self.drone_yawspeed_deg_s_doubleSpinBox.text())
         app_data["drone_step_size_m_s"] = float(self.drone_step_size_m_s_doubleSpinBox.text())
         app_data["drone_response_time_s"] = float(self.drone_response_time_s_doubleSpinBox.text())
-        app_data["camera_k"] = json.loads(self.camera_k_lineEdit.text())
-        app_data["camera_dis_coeffs"] = json.loads(self.camera_dis_coeffs_lineEdit.text())
+        # app_data["camera_k"] = json.loads(self.camera_k_lineEdit.text())
+        # app_data["camera_dis_coeffs"] = json.loads(self.camera_dis_coeffs_lineEdit.text())
+        # 数据从远端读取写到这里面
+        self.camera_k_lineEdit.setText(str(app_data["camera_k"]))
+        self.camera_dis_coeffs_lineEdit.setText(str(app_data["camera_dis_coeffs"]))
         app_data["limit_height_m"] = float(self.limit_height_m_doubleSpinBox.text())
         app_data["image_and_data_get_url"] = self.image_and_data_get_url_lineEdit.text()
         # 将全局变量中的值写到gui中

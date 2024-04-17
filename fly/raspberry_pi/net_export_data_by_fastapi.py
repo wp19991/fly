@@ -1,7 +1,6 @@
 import datetime
 import threading
 import time
-import subprocess
 
 import numpy as np
 import uvicorn
