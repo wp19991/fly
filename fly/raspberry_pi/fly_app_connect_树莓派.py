@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QImage, QPixmap
 from qasync import QEventLoop, QApplication, asyncSlot
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import QTimer, QThread
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
@@ -59,8 +59,18 @@ aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
 
 class GetDataThread(QThread):
+    # 构造函数
+    def __init__(self):
+        super(GetDataThread, self).__init__()
+        self.isCancel = False
+    def cancel(self):
+        # 线程取消
+        self.isCancel = True
+
     def run(self):
         while True:
+            if self.isCancel:
+                break
             try:
                 self.fresh()
             except Exception as e:
@@ -124,11 +134,18 @@ class main_win(QMainWindow, fly_window):
         self.fresh_data_timer.start()
 
         # 从网络获取无人机识别二维码参数的线程
-        self.get_data_th = GetDataThread(self)
+        self.get_data_th = GetDataThread()
         self.test_connect_data_url_pushButton.clicked.connect(self.test_connect_data_url_pushButton_event)
 
     def test_connect_data_url_pushButton_event(self):
+        if self.test_connect_data_url_pushButton.text() == "关闭连接":
+            self.get_data_th.cancel()
+            del self.get_data_th
+            self.get_data_th = GetDataThread()
+            self.test_connect_data_url_pushButton.setText("测试连接")
+            return
         self.get_data_th.start()
+        self.test_connect_data_url_pushButton.setText("关闭连接")
 
     def get_video_farme_pushButton_event(self):
         try:
@@ -143,8 +160,8 @@ class main_win(QMainWindow, fly_window):
             h, w, ch = img.shape
             qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
             self.label.clear()
-            self.pix = QPixmap(qt_img).scaled(self.label.width(), self.label.height())
-            self.label.setPixmap(self.pix)
+            pix = QPixmap(qt_img).scaled(self.label.width(), self.label.height())
+            self.label.setPixmap(pix)
             self.label.setScaledContents(True)
         except Exception as e:
             self.print_log(e)
