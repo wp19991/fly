@@ -173,6 +173,7 @@ class main_win(QMainWindow, fly_window):
 
         # 从网络获取无人机识别二维码参数的线程
         self.get_data_th = GetDataThread()
+        # 获取画面进行展示的线程
         self.get_video_th = GetVideoThread()
         self.get_video_th.changePixmap.connect(self.set_image)
         self.test_connect_data_url_pushButton.clicked.connect(self.test_connect_data_url_pushButton_event)
