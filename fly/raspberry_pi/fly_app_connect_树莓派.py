@@ -207,16 +207,26 @@ class main_win(QMainWindow, fly_window):
         # 准备完成，进行起飞
         self.print_log("等待启动...")
         await drone1.action.arm()
-        self.print_log("无人机起飞...")
+        self.print_log(f"无人机设置起飞限制高度{app_data['limit_height_m']}")
         await drone1.action.set_takeoff_altitude(float(app_data["limit_height_m"]))
-        await drone1.action.takeoff()
-        v_list = [float(app_data["drone_forward_m_s"]), float(app_data["drone_right_m_s"]),
-                  float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]
-        await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(*v_list))
-        await drone1.offboard.start()
+        self.print_log("无人机设置初始点")
+        await drone1.offboard.set_velocity_body(
+            VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
+
+        self.print_log("无人机开始板载模式")
+        try:
+            await drone1.offboard.start()
+        except OffboardError as error:
+            self.print_log(f"启动非车载模式失败，错误为: {error._result.result}")
+            self.print_log("解除武装")
+            await drone1.action.disarm()
+            return
+
         app_data["drone_is_running"] = True
         # 起飞需要油门给到-1以上
         self.print_log(f'油门给到{app_data["drone_down_m_s"]}，进行起飞')
+        await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(0, 0,
+                                                                     app_data["drone_down_m_s"], 0))
         try:
             while True:
                 if app_data['drone_is_kill_fly']:
@@ -270,8 +280,9 @@ class main_win(QMainWindow, fly_window):
                 else:
                     self.print_log_one_line("当前飞行控制:前后:{: <7}m/s,左右:{: <7}m/s,上下:{: <7}m/s".format(
                         *map(lambda x: round(x, 4), v_list)))
-        except OffboardError as e:
-            self.print_log(f"启动非车载模式失败，错误代码为: {e._result.result}")
+        except Exception as e:
+            self.print_log(str(e))
+
         await drone1.action.land()
         self.print_log("无人机降落，等待15s...")
         for i in range(30):
@@ -320,14 +331,14 @@ class main_win(QMainWindow, fly_window):
             # altitude_local_m: 0.09947194904088974, altitude_relative_m: 0.09947194904088974
             app_data["drone_altitude"] = position.altitude_local_m
             break
-        async for is_ready in drone1.telemetry.health():
-            if is_ready.is_armable:
+        async for health in drone1.telemetry.health():
+            if health.is_global_position_ok and health.is_home_position_ok:
                 app_data['test_connect_status'] = "可以启动"
                 break
             else:
                 app_data['test_connect_status'] = "不能启动"
                 self.print_log("无人机启动失败，当前不能启动，请检查无人机状态")
-                self.print_log(str(is_ready))
+                self.print_log(str(health))
                 break
 
     def drone_forward_m_s_doubleSpinBox_event(self):
