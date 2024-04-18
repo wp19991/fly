@@ -1,7 +1,6 @@
 import base64
 import datetime
 import threading
-import time
 
 import numpy as np
 import uvicorn
@@ -41,7 +40,7 @@ def main_for_video():
     global app_data, video_frame
     cap = cv2.VideoCapture(0)
     while True:
-        time.sleep(0.1)
+        # time.sleep(0.1)
         start_time = datetime.datetime.now()
         app_data["get_img_time"] = f"{start_time.strftime('[%Y-%m-%d %H:%M:%S]')}"
         ret, img = cap.read()
@@ -89,6 +88,12 @@ def main_for_video():
         app_data["get_img_aruco_time_stamp"] = f"{end_time.strftime('[%Y-%m-%d %H:%M:%S]')}"
         app_data["time_sub_microseconds"] = (end_time - start_time).microseconds
         video_frame = img.tobytes()
+        # if app_data["aruco_in_camera"][0][0] != 0:
+        #     print(f"[{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}]"
+        #           f" -- get video frame size: {len(video_frame)} , find aruco : {app_data['aruco_in_camera']}")
+        # else:
+        #     print(f"[{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}]"
+        #           f" -- get video frame size: {len(video_frame)}")
 
 
 @app.get('/app_data')
@@ -96,6 +101,7 @@ def drone_data():
     global app_data
     json_compatible_item_data = jsonable_encoder(app_data)
     return JSONResponse(content=json_compatible_item_data)
+
 
 @app.get('/video_farme')
 def drone_video_farme_data():

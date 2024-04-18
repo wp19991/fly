@@ -63,6 +63,7 @@ class GetDataThread(QThread):
     def __init__(self):
         super(GetDataThread, self).__init__()
         self.isCancel = False
+
     def cancel(self):
         # 线程取消
         self.isCancel = True
@@ -76,7 +77,7 @@ class GetDataThread(QThread):
             except Exception as e:
                 print(e)
                 break
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
     def fresh(self):
         global app_data
@@ -91,6 +92,43 @@ class GetDataThread(QThread):
         app_data["camera_dis_coeffs"] = res["camera_dis_coeffs"]
         app_data["drone_real_position"] = res["drone_real_position"]
         app_data["drone_real_orientation"] = res["drone_real_orientation"]
+
+
+class GetVideoThread(QThread):
+    changePixmap = pyqtSignal(QImage)
+
+    def __init__(self):
+        super(GetVideoThread, self).__init__()
+        self.isCancel = False
+
+    def cancel(self):
+        # 线程取消
+        self.isCancel = True
+
+    def run(self):
+        while True:
+            if self.isCancel:
+                break
+            try:
+                self.fresh()
+            except Exception as e:
+                print(e)
+                break
+            # time.sleep(0.01)
+
+    def fresh(self):
+        global app_data
+        url1 = f'{app_data["image_and_data_get_url"]}/video_farme'
+        res = requests.get(url1).text
+        frame_encoded_bytes = base64.b64decode(res)
+        img_shape = (480, 640, 3)
+        img_dtype = np.uint8
+        frame_decoded = np.frombuffer(frame_encoded_bytes, dtype=img_dtype).reshape(img_shape)
+        ret, buffer = cv2.imencode('.jpg', frame_decoded)
+        img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+        h, w, ch = img.shape
+        qt_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888).rgbSwapped()
+        self.changePixmap.emit(qt_img)
 
 
 class main_win(QMainWindow, fly_window):
@@ -135,16 +173,29 @@ class main_win(QMainWindow, fly_window):
 
         # 从网络获取无人机识别二维码参数的线程
         self.get_data_th = GetDataThread()
+        self.get_video_th = GetVideoThread()
+        self.get_video_th.changePixmap.connect(self.set_image)
         self.test_connect_data_url_pushButton.clicked.connect(self.test_connect_data_url_pushButton_event)
+
+    def set_image(self, image):
+        self.label.clear()
+        pix = QPixmap(image).scaled(self.label.width(), self.label.height())
+        self.label.setPixmap(pix)
+        self.label.setScaledContents(True)
 
     def test_connect_data_url_pushButton_event(self):
         if self.test_connect_data_url_pushButton.text() == "关闭连接":
             self.get_data_th.cancel()
             del self.get_data_th
+            self.get_video_th.cancel()
+            del self.get_video_th
             self.get_data_th = GetDataThread()
+            self.get_video_th = GetVideoThread()
+            self.get_video_th.changePixmap.connect(self.set_image)
             self.test_connect_data_url_pushButton.setText("测试连接")
             return
         self.get_data_th.start()
+        self.get_video_th.start()
         self.test_connect_data_url_pushButton.setText("关闭连接")
 
     def get_video_farme_pushButton_event(self):
