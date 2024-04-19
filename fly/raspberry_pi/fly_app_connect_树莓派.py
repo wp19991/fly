@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QImage, QPixmap
 from qasync import QEventLoop, QApplication, asyncSlot
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import QTimer, QThread, pyqtSignal
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal, Qt
 
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
@@ -243,6 +243,29 @@ class main_win(QMainWindow, fly_window):
         else:
             app_data["drone_is_auto_search_aruco"] = False
             self.drone_search_status_label.setText("未检测到二维码")
+
+    def keyPressEvent(self, event):
+        global app_data
+        if event.key() == Qt.Key_W:
+            self.print_log("键盘控制:W")
+            self.drone_forward_m_s_doubleSpinBox.setValue(
+                app_data['drone_forward_m_s'] + float(app_data['drone_step_size_m_s']))
+        elif event.key() == Qt.Key_S:
+            self.print_log("键盘控制:S")
+            self.drone_forward_m_s_doubleSpinBox.setValue(
+                app_data['drone_forward_m_s'] - float(app_data['drone_step_size_m_s']))
+        elif event.key() == Qt.Key_A:
+            self.print_log("键盘控制:A")
+            self.drone_right_m_s_doubleSpinBox.setValue(
+                app_data['drone_right_m_s'] - float(app_data['drone_step_size_m_s']))
+        elif event.key() == Qt.Key_D:
+            self.print_log("键盘控制:D")
+            self.drone_right_m_s_doubleSpinBox.setValue(
+                app_data['drone_right_m_s'] + float(app_data['drone_step_size_m_s']))
+        elif event.key() == Qt.Key_K:
+            self.print_log("键盘控制:K")
+
+        # 添加更多键盘事件...
 
     def drone_forward_add_pushButton_event(self):
         global app_data
@@ -506,37 +529,40 @@ class main_win(QMainWindow, fly_window):
     def fresh_data(self):
         # 将gui的数据写道全局变量中
         global app_data
-        app_data["mavsdk_server_address"] = self.mavsdk_server_address_lineEdit.text()
-        app_data["mavsdk_server_port"] = self.mavsdk_server_port_lineEdit.text()
-        app_data["system_address"] = self.system_address_lineEdit.text()
-        app_data["drone_forward_m_s"] = float(self.drone_forward_m_s_doubleSpinBox.text())
-        app_data["drone_right_m_s"] = float(self.drone_right_m_s_doubleSpinBox.text())
-        app_data["drone_down_m_s"] = float(self.drone_down_m_s_doubleSpinBox.text())
-        app_data["drone_yawspeed_deg_s"] = float(self.drone_yawspeed_deg_s_doubleSpinBox.text())
-        app_data["drone_step_size_m_s"] = float(self.drone_step_size_m_s_doubleSpinBox.text())
-        app_data["drone_response_time_s"] = float(self.drone_response_time_s_doubleSpinBox.text())
-        # app_data["camera_k"] = json.loads(self.camera_k_lineEdit.text())
-        # app_data["camera_dis_coeffs"] = json.loads(self.camera_dis_coeffs_lineEdit.text())
-        # 数据从远端读取写到这里面
-        self.camera_k_lineEdit.setText(str(app_data["camera_k"]))
-        self.camera_dis_coeffs_lineEdit.setText(str(app_data["camera_dis_coeffs"]))
-        app_data["limit_height_m"] = float(self.limit_height_m_doubleSpinBox.text())
-        app_data["image_and_data_get_url"] = self.image_and_data_get_url_lineEdit.text()
-        # 将全局变量中的值写到gui中
-        # 目前使用一个二维码
-        # TODO 如果有多个，可以进行计算融合
-        self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m({: <4}ms)'.format(
-            *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0]),
-            (app_data["time_sub_microseconds"] / 1000).__round__(2)))
-        # 在相机中，二维码的位置，目前使用第一个二维码
-        self.aruco_in_camera_label.setText('x:{: <7}%,y:{: <7}%'.format(
-            *map(lambda x: round(float(x), 4), app_data["aruco_in_camera"][0])))
-        self.drone_real_position_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m'.format(
-            *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
-        self.drone_altitude_label.setText('{: <7}m'.format(float(app_data["drone_altitude"]).__round__(3)))
-        self.test_connect_status_label.setText(app_data["test_connect_status"])
-        self.drone_control_xy_label.setText('x:{: <7}m/s\ny:{: <7}m/s'.format(float(app_data["drone_forward_m_s"]),
-                                                                              float(app_data["drone_right_m_s"])))
+        try:
+            app_data["mavsdk_server_address"] = self.mavsdk_server_address_lineEdit.text()
+            app_data["mavsdk_server_port"] = self.mavsdk_server_port_lineEdit.text()
+            app_data["system_address"] = self.system_address_lineEdit.text()
+            app_data["drone_forward_m_s"] = float(self.drone_forward_m_s_doubleSpinBox.text())
+            app_data["drone_right_m_s"] = float(self.drone_right_m_s_doubleSpinBox.text())
+            app_data["drone_down_m_s"] = float(self.drone_down_m_s_doubleSpinBox.text())
+            app_data["drone_yawspeed_deg_s"] = float(self.drone_yawspeed_deg_s_doubleSpinBox.text())
+            app_data["drone_step_size_m_s"] = float(self.drone_step_size_m_s_doubleSpinBox.text())
+            app_data["drone_response_time_s"] = float(self.drone_response_time_s_doubleSpinBox.text())
+            # app_data["camera_k"] = json.loads(self.camera_k_lineEdit.text())
+            # app_data["camera_dis_coeffs"] = json.loads(self.camera_dis_coeffs_lineEdit.text())
+            # 数据从远端读取写到这里面
+            self.camera_k_lineEdit.setText(str(app_data["camera_k"]))
+            self.camera_dis_coeffs_lineEdit.setText(str(app_data["camera_dis_coeffs"]))
+            app_data["limit_height_m"] = float(self.limit_height_m_doubleSpinBox.text())
+            app_data["image_and_data_get_url"] = self.image_and_data_get_url_lineEdit.text()
+            # 将全局变量中的值写到gui中
+            # 目前使用一个二维码
+            # TODO 如果有多个，可以进行计算融合
+            self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m({: <4}ms)'.format(
+                *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0]),
+                (app_data["time_sub_microseconds"] / 1000).__round__(2)))
+            # 在相机中，二维码的位置，目前使用第一个二维码
+            self.aruco_in_camera_label.setText('x:{: <7}%,y:{: <7}%'.format(
+                *map(lambda x: round(float(x), 4), app_data["aruco_in_camera"][0])))
+            self.drone_real_position_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m'.format(
+                *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
+            self.drone_altitude_label.setText('{: <7}m'.format(float(app_data["drone_altitude"]).__round__(3)))
+            self.test_connect_status_label.setText(app_data["test_connect_status"])
+            self.drone_control_xy_label.setText('x:{: <7}m/s\ny:{: <7}m/s'.format(float(app_data["drone_forward_m_s"]),
+                                                                                  float(app_data["drone_right_m_s"])))
+        except:
+            self.print_log("数值填入不合法")
 
 
 if __name__ == "__main__":
