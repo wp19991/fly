@@ -269,8 +269,6 @@ class main_win(QMainWindow, fly_window):
         elif event.key() == Qt.Key_K:
             self.print_log("键盘控制:K")
 
-        # 添加更多键盘事件...
-
     def drone_forward_add_pushButton_event(self):
         global app_data
         self.drone_forward_m_s_doubleSpinBox.setValue(
@@ -302,7 +300,7 @@ class main_win(QMainWindow, fly_window):
             self.print_log("无人机启动失败，当前不能起飞，请检查无人机状态")
             return
         if float(app_data["drone_down_m_s"]) < -1:
-            self.print_log("油门太大，目前上升速度大于1m/s，不足以启动无人机，数字越小油门越大")
+            self.print_log("油门太大，可能失控，目前上升速度大于1m/s，数字越小油门越大")
             return
         # 准备完成，进行起飞
         self.print_log("等待启动...")
@@ -323,7 +321,6 @@ class main_win(QMainWindow, fly_window):
             return
 
         app_data["drone_is_running"] = True
-        # 起飞需要油门给到-1以上
         self.print_log(f'油门给到{app_data["drone_down_m_s"]}，进行起飞')
         await drone1.offboard.set_velocity_body(VelocityBodyYawspeed(0, 0,
                                                                      app_data["drone_down_m_s"], 0))
@@ -421,7 +418,7 @@ class main_win(QMainWindow, fly_window):
         drone1 = System(mavsdk_server_address=app_data["mavsdk_server_address"],
                         port=int(app_data["mavsdk_server_port"]))
         await drone1.connect()
-        app_data['test_connect_status'] = "等待连接..."
+        app_data['test_connect_status'] = "等待连接"
         self.print_log("等待无人机进行连接...")
         async for state in drone1.core.connection_state():
             if state.is_connected:
