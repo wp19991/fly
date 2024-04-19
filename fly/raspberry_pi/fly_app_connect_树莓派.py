@@ -26,10 +26,14 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # 运行无人机的时候更新这些参数
 app_data = {
     # 可以修改下面5个默认的参数，在程序启动后会变成下面的参数
-    "mavsdk_server_address": "192.168.1.112",
+    # "mavsdk_server_address": "192.168.1.112",
+    "mavsdk_server_address": "192.168.1.216",
+    # "mavsdk_server_address": "192.168.77.23",
     "mavsdk_server_port": "50051",
-    "image_and_data_get_url": "http://192.168.1.112:8000",
+    # "image_and_data_get_url": "http://192.168.1.112:8000",
+    "image_and_data_get_url": "http://192.168.77.23:8000",
     "system_address": "udp://:14540",
+    "limit_height_m": 0.6, # xuyao
     "drone_down_m_s": -1,
     "drone_forward_m_s": 0.,
     "drone_right_m_s": 0.,
@@ -45,7 +49,6 @@ app_data = {
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
     "drone_altitude": 0.,  # 无人机的气压计高度
-    "limit_height_m": 1.,
     "test_connect_status": "status",  # 连接成功，连接失败，可以启动，不能启动
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
     "drone_is_auto_search_aruco": False,  # 无人机是否自动搜寻二维码，并且停在上空
@@ -141,6 +144,7 @@ class main_win(QMainWindow, fly_window):
         self.image_and_data_get_url_lineEdit.setText(app_data["image_and_data_get_url"])
         self.system_address_lineEdit.setText(app_data["system_address"])
         self.drone_down_m_s_doubleSpinBox.setValue(app_data["drone_down_m_s"])
+        self.limit_height_m_doubleSpinBox.setValue(app_data["limit_height_m"])
 
         # 绑定事件
         self.test_connect_pushButton.clicked.connect(self.test_connect_pushButton_event)
@@ -313,9 +317,12 @@ class main_win(QMainWindow, fly_window):
                 await asyncio.sleep(float(app_data["drone_response_time_s"]))
                 # 可以更新气压计高度
                 now_height_m = 0
-                async for position in drone1.telemetry.altitude():
-                    app_data["drone_altitude"] = position.altitude_local_m
-                    now_height_m = position.altitude_local_m
+                # 更新高度，需要有光流模块
+                async for distance_sensor in drone1.telemetry.distance_sensor():
+                    # print(position)
+                    # altitude_local_m: 0.09947194904088974, altitude_relative_m: 0.09947194904088974
+                    app_data["drone_altitude"] = distance_sensor.current_distance_m
+                    now_height_m = distance_sensor.current_distance_m
                     break
                 # 进行无人机的飞行控制
                 limit_height_m = float(app_data["limit_height_m"])  # 无人机的限制高度
@@ -394,21 +401,26 @@ class main_win(QMainWindow, fly_window):
             data_dict_list.append({"name": param.name, "value": param.value})
         with open("params.json", "w", encoding='utf-8') as file:
             file.write(json.dumps(data_dict_list, ensure_ascii=False, indent=4))
-        # 更新气压计高度
-        async for position in drone1.telemetry.altitude():
+        # 更新高度，需要有光流模块
+        async for distance_sensor in drone1.telemetry.distance_sensor():
             # print(position)
             # altitude_local_m: 0.09947194904088974, altitude_relative_m: 0.09947194904088974
-            app_data["drone_altitude"] = position.altitude_local_m
+            app_data["drone_altitude"] = distance_sensor.current_distance_m
             break
-        async for health in drone1.telemetry.health():
-            if health.is_global_position_ok and health.is_home_position_ok:
-                app_data['test_connect_status'] = "可以启动"
-                break
-            else:
-                app_data['test_connect_status'] = "不能启动"
-                self.print_log("无人机启动失败，当前不能启动，请检查无人机状态")
-                self.print_log(str(health))
-                break
+        self.print_log("无人机设置初始点")
+        await drone1.offboard.set_velocity_body(
+            VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
+
+        self.print_log("无人机开始板载模式")
+        try:
+            await drone1.offboard.start()
+        except OffboardError as error:
+            self.print_log(f"启动非车载模式失败，错误为: {error._result.result}")
+            self.print_log("解除武装")
+            await drone1.action.disarm()
+            return
+
+        app_data['test_connect_status'] = "可以启动"
 
     def drone_forward_m_s_doubleSpinBox_event(self):
         global app_data

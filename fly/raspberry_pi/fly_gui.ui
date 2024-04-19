@@ -315,11 +315,17 @@
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QDoubleSpinBox" name="limit_height_m_doubleSpinBox">
+         <property name="minimum">
+          <double>-10.000000000000000</double>
+         </property>
          <property name="maximum">
           <double>10.000000000000000</double>
          </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
          <property name="value">
-          <double>1.000000000000000</double>
+          <double>0.000000000000000</double>
          </property>
         </widget>
        </item>
