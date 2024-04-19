@@ -33,8 +33,10 @@ app_data = {
     # "image_and_data_get_url": "http://192.168.1.112:8000",
     "image_and_data_get_url": "http://192.168.77.23:8000",
     "system_address": "udp://:14540",
-    "limit_height_m": 0.6, # xuyao
-    "drone_down_m_s": -1,
+    "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
+    "is_simulation": True,  # 模拟环境中需要修改这个为True
+    "drone_down_m_s": -1,  # 起飞的速度
+    "drone_max_up_down_m_s": 1,  # 无人机飞行上升下降速度的最大值
     "drone_forward_m_s": 0.,
     "drone_right_m_s": 0.,
     "drone_yawspeed_deg_s": 0.,
@@ -274,8 +276,8 @@ class main_win(QMainWindow, fly_window):
         if app_data['test_connect_status'] != "可以启动":
             self.print_log("无人机启动失败，当前不能起飞，请检查无人机状态")
             return
-        if float(app_data["drone_down_m_s"]) > -1:
-            self.print_log("油门太小，不足以启动无人机，数字越小油门越大")
+        if float(app_data["drone_down_m_s"]) < -1:
+            self.print_log("油门太大，目前上升速度大于1m/s，不足以启动无人机，数字越小油门越大")
             return
         # 准备完成，进行起飞
         self.print_log("等待启动...")
@@ -317,16 +319,23 @@ class main_win(QMainWindow, fly_window):
                 await asyncio.sleep(float(app_data["drone_response_time_s"]))
                 # 可以更新气压计高度
                 now_height_m = 0
-                # 更新高度，需要有光流模块
-                async for distance_sensor in drone1.telemetry.distance_sensor():
-                    # print(position)
-                    # altitude_local_m: 0.09947194904088974, altitude_relative_m: 0.09947194904088974
-                    app_data["drone_altitude"] = distance_sensor.current_distance_m
-                    now_height_m = distance_sensor.current_distance_m
-                    break
+                if app_data["is_simulation"]:
+                    async for position in drone1.telemetry.position():
+                        app_data["drone_altitude"] = position.relative_altitude_m
+                        now_height_m = position.relative_altitude_m
+                        break
+                else:
+                    # 更新高度，需要有光流模块
+                    async for distance_sensor in drone1.telemetry.distance_sensor():
+                        app_data["drone_altitude"] = distance_sensor.current_distance_m
+                        now_height_m = distance_sensor.current_distance_m
+                        break
                 # 进行无人机的飞行控制
                 limit_height_m = float(app_data["limit_height_m"])  # 无人机的限制高度
                 setup_speed_hight = abs(now_height_m - limit_height_m) * 3
+                # 如果飞行控制的最大速度超过了限制，则改为这个速度
+                if setup_speed_hight > abs(app_data["drone_max_up_down_m_s"]):
+                    setup_speed_hight = abs(app_data["drone_max_up_down_m_s"])
                 if now_height_m > limit_height_m:
                     app_data["drone_down_m_s"] = setup_speed_hight
                 else:
@@ -401,12 +410,15 @@ class main_win(QMainWindow, fly_window):
             data_dict_list.append({"name": param.name, "value": param.value})
         with open("params.json", "w", encoding='utf-8') as file:
             file.write(json.dumps(data_dict_list, ensure_ascii=False, indent=4))
-        # 更新高度，需要有光流模块
-        async for distance_sensor in drone1.telemetry.distance_sensor():
-            # print(position)
-            # altitude_local_m: 0.09947194904088974, altitude_relative_m: 0.09947194904088974
-            app_data["drone_altitude"] = distance_sensor.current_distance_m
-            break
+        if app_data["is_simulation"]:
+            async for position in drone1.telemetry.position():
+                app_data["drone_altitude"] = position.relative_altitude_m
+                break
+        else:
+            # 更新高度，需要有光流模块
+            async for distance_sensor in drone1.telemetry.distance_sensor():
+                app_data["drone_altitude"] = distance_sensor.current_distance_m
+                break
         self.print_log("无人机设置初始点")
         await drone1.offboard.set_velocity_body(
             VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
