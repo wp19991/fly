@@ -2,6 +2,9 @@ file/
 file1/
 .idea
 *.mp4
+fly/raspberry_pi/mavsdk_server_linux-arm64-musl
+fly/raspberry_pi/params.json
+fly/目标.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
