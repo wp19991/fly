@@ -34,7 +34,7 @@ app_data = {
     "image_and_data_get_url": "http://192.168.77.23:8000",
     "system_address": "udp://:14540",
     "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
-    "is_simulation": True,  # 模拟环境中需要修改这个为True
+    "is_simulation": False,  # 模拟环境中需要修改这个为True
     "drone_down_m_s": -1,  # 起飞的速度
     "drone_max_up_down_m_s": 1,  # 无人机飞行上升下降速度的最大值
     "drone_forward_m_s": 0.,
@@ -405,6 +405,7 @@ class main_win(QMainWindow, fly_window):
                 self.print_log("无人机连接失败")
         self.print_log("无人机连接成功")
         # 保存无人机参数
+        self.print_log("保存无人机参数...")
         all_params = await drone1.param.get_all_params()
         data_dict_list = []
         for param in all_params.int_params:
@@ -413,6 +414,8 @@ class main_win(QMainWindow, fly_window):
             data_dict_list.append({"name": param.name, "value": param.value})
         with open("params.json", "w", encoding='utf-8') as file:
             file.write(json.dumps(data_dict_list, ensure_ascii=False, indent=4))
+        self.print_log("保存无人机参数成功")
+        self.print_log("获取无人机当前高度信息...")
         if app_data["is_simulation"]:
             async for position in drone1.telemetry.position():
                 app_data["drone_altitude"] = position.relative_altitude_m
@@ -422,11 +425,12 @@ class main_win(QMainWindow, fly_window):
             async for distance_sensor in drone1.telemetry.distance_sensor():
                 app_data["drone_altitude"] = distance_sensor.current_distance_m
                 break
-        self.print_log("无人机设置初始点")
+        self.print_log("无人机当前高度{}".format(app_data["drone_altitude"]))
+        self.print_log("无人机设置初始点...")
         await drone1.offboard.set_velocity_body(
             VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
 
-        self.print_log("无人机开始板载模式")
+        self.print_log("启动无人机开始板载模式")
         try:
             await drone1.offboard.start()
         except OffboardError as error:

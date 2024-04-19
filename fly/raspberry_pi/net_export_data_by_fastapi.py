@@ -103,8 +103,8 @@ def drone_data():
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.get('/video_video_frame')
-def drone_video_video_frame_data():
+@app.get('/video_frame')
+def drone_video_frame_data():
     global video_frame
     frame_encoded_string = base64.b64encode(video_frame).decode()
     return PlainTextResponse(content=frame_encoded_string)
