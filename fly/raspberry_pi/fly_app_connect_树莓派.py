@@ -57,6 +57,7 @@ app_data = {
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
     "drone_is_auto_search_aruco": False,  # 无人机是否自动搜寻二维码，并且停在上空
     "drone_is_kill_fly": False,  # 是否直接关闭飞行的电机
+    "now_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
 }
 
 drone1: System = System()
@@ -406,8 +407,8 @@ class main_win(QMainWindow, fly_window):
                 return
         self.print_log("停止板载模式...")
         await drone1.offboard.stop()
+        # 下载日志信息
         # entries = await drone1.log_files.get_entries()
-        # # 下载日志信息
         # self.print_log(f"下载日志{entries[-1]}")
         # async for progress in drone1.log_files.download_log_file(entries[-1], "log"):
         #     self.print_log_one_line(progress)
@@ -517,7 +518,6 @@ class main_win(QMainWindow, fly_window):
         lines = text.split('\n')
 
         if len(lines) > 0:
-            # Remove the last line
             if '飞行控制:前后:' in lines[-1] \
                     or 'ProgressData:' in lines[-1]:
                 lines = lines[:-1]
@@ -533,6 +533,7 @@ class main_win(QMainWindow, fly_window):
     def fresh_data(self):
         # 将gui的数据写道全局变量中
         global app_data
+        app_data["now_time"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         try:
             app_data["mavsdk_server_address"] = self.mavsdk_server_address_lineEdit.text()
             app_data["mavsdk_server_port"] = self.mavsdk_server_port_lineEdit.text()
@@ -568,10 +569,13 @@ class main_win(QMainWindow, fly_window):
                 *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
             self.drone_altitude_label.setText('{: <7}m'.format(float(app_data["drone_altitude"]).__round__(3)))
             self.test_connect_status_label.setText(app_data["test_connect_status"])
-            self.drone_control_xy_label.setText('x:{: <7}m/s\ny:{: <7}m/s'.format(float(app_data["drone_forward_m_s"]),
-                                                                                  float(app_data["drone_right_m_s"])))
+            self.drone_control_xy_label.setText('x:{: <7}m/s\ny:{: <7}m/s'.format(
+                float(app_data["drone_forward_m_s"]), float(app_data["drone_right_m_s"])))
         except:
             self.print_log("数值填入不合法")
+        with open('log_app_data.json', 'a+', encoding='utf-8') as f:
+            f.write(json.dumps(app_data, ensure_ascii=False))
+            f.write('\n')
 
 
 if __name__ == "__main__":

@@ -21,8 +21,8 @@ app_data = {
     "drone_xyz_rvec_of_aruco": [[0, 0, 0] for _ in range(22)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
     "aruco_in_camera": [[0, 0] for _ in range(22)],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
     "time_sub_microseconds": 0.,  # 从得到的是否到完成识别的时间差值
-    "get_img_time": f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}",
-    "get_img_aruco_time_stamp": f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}",
+    "get_img_time": f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    "get_img_aruco_time_stamp": f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
     # 下面的参数如果获取到也可以进行更新
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
@@ -43,7 +43,7 @@ def main_for_video():
     while True:
         # time.sleep(0.1)
         start_time = datetime.datetime.now()
-        app_data["get_img_time"] = f"{start_time.strftime('[%Y-%m-%d %H:%M:%S]')}"
+        app_data["get_img_time"] = f"{start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         ret, img = cap.read()
         # 识别二维码
         # Convert to grayscale
@@ -87,7 +87,7 @@ def main_for_video():
             app_data['drone_xyz_rvec_of_aruco'] = [[0, 0, 0] for _ in range(22)]
             app_data["aruco_id_list"] = [-1 for _ in range(22)]
         end_time = datetime.datetime.now()
-        app_data["get_img_aruco_time_stamp"] = f"{end_time.strftime('[%Y-%m-%d %H:%M:%S]')}"
+        app_data["get_img_aruco_time_stamp"] = f"{end_time.strftime('%Y-%m-%d %H:%M:%S')}"
         app_data["time_sub_microseconds"] = (end_time - start_time).microseconds
         video_frame = img.tobytes()
         # if app_data["aruco_in_camera"][0][0] != 0:
