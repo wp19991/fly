@@ -47,10 +47,10 @@ app_data = {
     "drone_xyz_of_aruco": [[0, 0, 0]],  # m 在二维码下无人机的位置
     "drone_xyz_rvec_of_aruco": [[0, 0, 0]],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
     "aruco_in_camera": [[0, 0]],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
-    "time_sub_microseconds": 0.,  # 从得到的是否到完成识别的时间差值
+    "time_sub_microseconds": 0.,  # 从得到的时候到完成识别的时间差值
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
-    "drone_altitude": 0.,  # 无人机的气压计高度
+    "drone_altitude": 0.,  # 无人机的实时高度
     "test_connect_status": "status",  # 连接成功，连接失败，可以启动，不能启动
     "drone_is_running": False,  # 无人机是否起飞，当为不起飞的是否，跳出运行的while循环
     "drone_is_auto_search_aruco": False,  # 无人机是否自动搜寻二维码，并且停在上空
@@ -123,7 +123,7 @@ class GetVideoThread(QThread):
 
     def fresh(self):
         global app_data
-        url1 = f'{app_data["image_and_data_get_url"]}/video_farme'
+        url1 = f'{app_data["image_and_data_get_url"]}/video_frame'
         res = requests.get(url1).text
         frame_encoded_bytes = base64.b64decode(res)
         img_shape = (480, 640, 3)
@@ -158,7 +158,7 @@ class main_win(QMainWindow, fly_window):
         self.drone_right_add_pushButton.clicked.connect(self.drone_right_add_pushButton_event)
         self.drone_search_aruco_pushButton.clicked.connect(self.drone_search_aruco_pushButton_event)
         self.drone_kill_pushButton.clicked.connect(self.drone_kill_pushButton_event)
-        self.get_video_farme_pushButton.clicked.connect(self.get_video_farme_pushButton_event)
+        self.get_video_frame_pushButton.clicked.connect(self.get_video_frame_pushButton_event)
         # doubleSpinBox修改事件
         self.drone_forward_m_s_doubleSpinBox.valueChanged.connect(self.drone_forward_m_s_doubleSpinBox_event)
         self.drone_right_m_s_doubleSpinBox.valueChanged.connect(self.drone_right_m_s_doubleSpinBox_event)
@@ -168,13 +168,10 @@ class main_win(QMainWindow, fly_window):
         self.drone_response_time_s_doubleSpinBox.valueChanged.connect(self.drone_response_time_s_doubleSpinBox_event)
         self.limit_height_m_doubleSpinBox.valueChanged.connect(self.limit_height_m_doubleSpinBox_event)
 
-        # 创建一个QTimer对象
+        # 创建一个定时器对象刷新参数显示与收集
         self.fresh_data_timer = QTimer(self)
-        # 设置定时器每100ms触发一次
         self.fresh_data_timer.setInterval(100)
-        # 将定时器的timeout信号连接到自定义的函数，即每100ms会调用一次
         self.fresh_data_timer.timeout.connect(self.fresh_data)
-        # 启动定时器
         self.fresh_data_timer.start()
 
         # 从网络获取无人机识别二维码参数的线程
@@ -182,6 +179,7 @@ class main_win(QMainWindow, fly_window):
         # 获取画面进行展示的线程
         self.get_video_th = GetVideoThread()
         self.get_video_th.changePixmap.connect(self.set_image)
+        # 启动线程的按钮
         self.test_connect_data_url_pushButton.clicked.connect(self.test_connect_data_url_pushButton_event)
 
     def set_image(self, image):
@@ -205,10 +203,10 @@ class main_win(QMainWindow, fly_window):
         self.get_video_th.start()
         self.test_connect_data_url_pushButton.setText("关闭连接")
 
-    def get_video_farme_pushButton_event(self):
+    def get_video_frame_pushButton_event(self):
         try:
-            url1 = f'{app_data["image_and_data_get_url"]}/video_farme'
-            res = requests.get(url1).text
+            url1 = f'{app_data["image_and_data_get_url"]}/video_frame'
+            res = requests.get(url1,timeout=3).text
             frame_encoded_bytes = base64.b64decode(res)
             img_shape = (480, 640, 3)
             img_dtype = np.uint8

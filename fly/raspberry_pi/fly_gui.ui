@@ -765,7 +765,7 @@ y:{}m/s</string>
      </sizepolicy>
     </property>
    </widget>
-   <widget class="QPushButton" name="get_video_farme_pushButton">
+   <widget class="QPushButton" name="get_video_frame_pushButton">
     <property name="geometry">
      <rect>
       <x>370</x>
