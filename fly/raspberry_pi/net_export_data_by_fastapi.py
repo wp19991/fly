@@ -14,6 +14,7 @@ from starlette.responses import JSONResponse
 app = FastAPI()
 
 app_data = {
+    "aruco_id_in_real_map": [[0, 0] for u in range(22)],  # 对应二维码在现实中对应的位置，为了多个二维码进行计算融合，指定一个原点
     "aruco_id_list": [-1 for o in range(22)],  # 当前识别到的aruco的id：0-20
     "drone_xyz_of_aruco": [[0, 0, 0] for i in range(22)],  # m 在二维码下无人机的位置
     "drone_xyz_rvec_of_aruco": [[0, 0, 0] for j in range(22)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
@@ -77,9 +78,9 @@ def main_for_video():
                 cv2.aruco.drawDetectedMarkers(img, corners, ids)
                 # 更新参数
                 app_data["aruco_in_camera"].insert(i, aruco_in_camera)
-                app_data["drone_xyz_of_aruco"].insert(i,tvec[0, :, :][0].tolist())
-                app_data["drone_xyz_rvec_of_aruco"].insert(i,rvec[0, :, :][0].tolist())
-                app_data["aruco_id_list"].insert(i,int(ids[i]))
+                app_data["drone_xyz_of_aruco"].insert(i, tvec[0, :, :][0].tolist())
+                app_data["drone_xyz_rvec_of_aruco"].insert(i, rvec[0, :, :][0].tolist())
+                app_data["aruco_id_list"].insert(i, int(ids[i]))
         else:
             # 如果没有及那个参数设置为0
             app_data["aruco_in_camera"] = [[0, 0]]
