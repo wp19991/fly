@@ -342,40 +342,43 @@ class main_win(QMainWindow, fly_window):
                 # 可以更新气压计高度
                 now_height_m = 0
                 if app_data["is_simulation"]:
+                    # 模拟环境中可以获取确定的高度信息，真实环境中高度信息依赖气压计或者光流模块
                     async for position in drone1.telemetry.position():
                         app_data["drone_altitude"] = position.relative_altitude_m
                         now_height_m = position.relative_altitude_m
                         break
                 else:
-                    # 更新高度，需要有光流模块
+                    # 更新高度，需要有光流模块，光流模块比使用气压计获取的高度信息准确
                     async for distance_sensor in drone1.telemetry.distance_sensor():
                         app_data["drone_altitude"] = distance_sensor.current_distance_m
                         now_height_m = distance_sensor.current_distance_m
                         break
                 # 进行无人机的飞行控制
+                # ！！！如果需要准确的对无人机进行控制，就需要准确的获取无人机在真实环境中的信息
+
                 limit_height_m = float(app_data["limit_height_m"])  # 无人机的限制高度
-                setup_speed_hight = abs(now_height_m - limit_height_m) * 3
+                step_speed_height = abs(now_height_m - limit_height_m) * 3
                 # 如果飞行控制的最大速度超过了限制，则改为这个速度
-                if setup_speed_hight > abs(app_data["drone_max_up_down_m_s"]):
-                    setup_speed_hight = abs(app_data["drone_max_up_down_m_s"])
+                if step_speed_height > abs(app_data["drone_max_up_down_m_s"]):
+                    step_speed_height = abs(app_data["drone_max_up_down_m_s"])
                 if now_height_m > limit_height_m:
-                    app_data["drone_down_m_s"] = setup_speed_hight
+                    app_data["drone_down_m_s"] = step_speed_height
                 else:
-                    app_data["drone_down_m_s"] = -setup_speed_hight
+                    app_data["drone_down_m_s"] = -step_speed_height
 
                 # 自动在二维码上空悬停，二维码在相机正中间
                 if app_data["drone_is_auto_search_aruco"]:
-                    setup_speed_0 = abs(float(app_data["aruco_in_camera"][0][0]) - 0) * 1
+                    step_speed_0 = abs(float(app_data["aruco_in_camera"][0][0]) - 0) * 1
                     # 差距越大越要向那个地方飞，因为二维码是相对于无人机的
                     if float(app_data["aruco_in_camera"][0][0]) > 0:  # x -> left,right
-                        app_data["drone_right_m_s"] = setup_speed_0
+                        app_data["drone_right_m_s"] = step_speed_0
                     else:
-                        app_data["drone_right_m_s"] = -setup_speed_0
-                    setup_speed_1 = abs(float(app_data["aruco_in_camera"][0][1]) - 0) * 1
+                        app_data["drone_right_m_s"] = -step_speed_0
+                    step_speed_1 = abs(float(app_data["aruco_in_camera"][0][1]) - 0) * 1
                     if float(app_data["aruco_in_camera"][0][1]) > 0:  # y -> forward,back
-                        app_data["drone_forward_m_s"] = setup_speed_1
+                        app_data["drone_forward_m_s"] = step_speed_1
                     else:
-                        app_data["drone_forward_m_s"] = -setup_speed_1
+                        app_data["drone_forward_m_s"] = -step_speed_1
 
                 v_list = [float(app_data["drone_forward_m_s"]), float(app_data["drone_right_m_s"]),
                           float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]
