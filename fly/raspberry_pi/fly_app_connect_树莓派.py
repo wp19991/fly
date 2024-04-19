@@ -381,6 +381,11 @@ class main_win(QMainWindow, fly_window):
                 return
         self.print_log("停止板载模式...")
         await drone1.offboard.stop()
+        # entries = await drone1.log_files.get_entries()
+        # # 下载日志信息
+        # self.print_log(f"下载日志{entries[-1]}")
+        # async for progress in drone1.log_files.download_log_file(entries[-1], "log"):
+        #     self.print_log_one_line(progress)
         await asyncio.sleep(1)
         self.print_log("解除武装...")
         await drone1.action.disarm()
@@ -484,7 +489,8 @@ class main_win(QMainWindow, fly_window):
 
         if len(lines) > 0:
             # Remove the last line
-            if '飞行控制:前后:' in lines[-1]:
+            if '飞行控制:前后:' in lines[-1] \
+                    or 'ProgressData:' in lines[-1]:
                 lines = lines[:-1]
             # Append the new text
             lines.append(new_text)
