@@ -26,12 +26,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # 运行无人机的时候更新这些参数
 app_data = {
     # 可以修改下面5个默认的参数，在程序启动后会变成下面的参数
-    # "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
+    "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
     # "mavsdk_server_address": "192.168.1.216",  # 模拟环境
-    "mavsdk_server_address": "192.168.77.23",  # 真实环境，移动热点
+    # "mavsdk_server_address": "192.168.77.23",  # 真实环境，移动热点
     "mavsdk_server_port": "50051",
-    # "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
-    "image_and_data_get_url": "http://192.168.77.23:8000",  # 移动热点
+    "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
+    # "image_and_data_get_url": "http://192.168.77.23:8000",  # 移动热点
     "system_address": "udp://:14540",
     "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
     "is_simulation": False,  # 模拟环境中需要修改这个为True

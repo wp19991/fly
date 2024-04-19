@@ -2,23 +2,24 @@ import base64
 import datetime
 import threading
 
+import cv2
 import numpy as np
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import PlainTextResponse
-
-import cv2
 from starlette.responses import JSONResponse
 
 app = FastAPI()
 
 app_data = {
-    "aruco_id_in_real_map": [[0, 0] for u in range(22)],  # 对应二维码在现实中对应的位置，为了多个二维码进行计算融合，指定一个原点
-    "aruco_id_list": [-1 for o in range(22)],  # 当前识别到的aruco的id：0-20
-    "drone_xyz_of_aruco": [[0, 0, 0] for i in range(22)],  # m 在二维码下无人机的位置
-    "drone_xyz_rvec_of_aruco": [[0, 0, 0] for j in range(22)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
-    "aruco_in_camera": [[0, 0] for k in range(22)],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
+    "aruco_length_m": 0.052,  # aruco实际的的大小边长
+    "aruco_id_in_real_map": [[0, 0] for _ in range(22)],  # 对应二维码在现实中对应的位置，为了多个二维码进行计算融合，指定一个原点
+    "aruco_id_list": [-1 for _ in range(22)],  # 当前识别到的aruco的id：0-20
+    "drone_xyz_of_aruco": [[0, 0, 0] for _ in range(22)],  # m 在二维码下无人机的位置
+    "drone_xyz_rvec_of_aruco": [[0, 0, 0] for _ in range(22)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
+    "aruco_in_camera": [[0, 0] for _ in range(22)],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
     "time_sub_microseconds": 0.,  # 从得到的是否到完成识别的时间差值
     "get_img_time": f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}",
     "get_img_aruco_time_stamp": f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}",
@@ -49,6 +50,8 @@ def main_for_video():
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # 获取图像的框，id，rejectedImgPoints
         corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+        # 画框
+        cv2.aruco.drawDetectedMarkers(img, corners, ids)
         if len(corners) > 0:
             for i in range(len(corners)):
                 # 二维码在相机画面中的位置，中心点为0，0，右上为正
@@ -66,24 +69,23 @@ def main_for_video():
                 aruco_in_camera[1] = -aruco_in_camera[1]
                 # 获取识别后的坐标
                 rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners[i],
-                                                                    0.052,  # 二维码的实际大小m
+                                                                    app_data["aruco_length_m"],  # 二维码的实际大小m
                                                                     np.array(app_data["camera_k"]),
                                                                     np.array(app_data["camera_dis_coeffs"]))
                 # 画轴
                 cv2.drawFrameAxes(img, np.array(app_data["camera_k"]), np.array(app_data["camera_dis_coeffs"]),
                                   rvec[0, :, :], tvec[0, :, :], 0.03)
-                # 画框
-                cv2.aruco.drawDetectedMarkers(img, corners, ids)
                 # 更新参数
                 app_data["aruco_in_camera"].insert(i, aruco_in_camera)
                 app_data["drone_xyz_of_aruco"].insert(i, tvec[0, :, :][0].tolist())
                 app_data["drone_xyz_rvec_of_aruco"].insert(i, rvec[0, :, :][0].tolist())
                 app_data["aruco_id_list"].insert(i, int(ids[i]))
         else:
-            # 如果没有及那个参数设置为0
-            app_data["aruco_in_camera"] = [[0, 0]]
-            app_data['drone_xyz_of_aruco'] = [[0, 0, 0]]
-            app_data['drone_xyz_rvec_of_aruco'] = [[0, 0, 0]]
+            # 如果没有识别到二维码，参数设置为默认值
+            app_data["aruco_in_camera"] = [[0, 0] for _ in range(22)]
+            app_data['drone_xyz_of_aruco'] = [[0, 0, 0] for _ in range(22)]
+            app_data['drone_xyz_rvec_of_aruco'] = [[0, 0, 0] for _ in range(22)]
+            app_data["aruco_id_list"] = [-1 for _ in range(22)]
         end_time = datetime.datetime.now()
         app_data["get_img_aruco_time_stamp"] = f"{end_time.strftime('[%Y-%m-%d %H:%M:%S]')}"
         app_data["time_sub_microseconds"] = (end_time - start_time).microseconds
