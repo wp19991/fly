@@ -26,12 +26,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # 运行无人机的时候更新这些参数
 app_data = {
     # 可以修改下面5个默认的参数，在程序启动后会变成下面的参数
-    # "mavsdk_server_address": "192.168.1.112",
-    "mavsdk_server_address": "192.168.1.216",
-    # "mavsdk_server_address": "192.168.77.23",
+    "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
+    # "mavsdk_server_address": "192.168.1.216",  # 模拟环境
+    # "mavsdk_server_address": "192.168.77.23",  # 真实环境，移动热点
     "mavsdk_server_port": "50051",
-    # "image_and_data_get_url": "http://192.168.1.112:8000",
-    "image_and_data_get_url": "http://192.168.77.23:8000",
+    "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
+    # "image_and_data_get_url": "http://192.168.77.23:8000",  # 移动热点
     "system_address": "udp://:14540",
     "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
     "is_simulation": False,  # 模拟环境中需要修改这个为True
@@ -44,9 +44,10 @@ app_data = {
     "drone_response_time_s": 0.2,
     "camera_k": [[391.95377974, 0.0, 335.17043033], [0.0, 377.71297362, 245.03757622], [0.0, 0.0, 1.0]],  # 相机的内参k
     "camera_dis_coeffs": [0.04714445, -0.07145486, 0.00588382, 0.00876541, 0.07204812],  # 相机的内参dis_coeffs
-    "drone_xyz_of_aruco": [[0, 0, 0]],  # m 在二维码下无人机的位置
-    "drone_xyz_rvec_of_aruco": [[0, 0, 0]],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
-    "aruco_in_camera": [[0, 0]],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
+    "aruco_id_list": [-1 for o in range(20)],  # 当前识别到的aruco的id：0-20
+    "drone_xyz_of_aruco": [[0, 0, 0] for i in range(20)],  # m 在二维码下无人机的位置
+    "drone_xyz_rvec_of_aruco": [[0, 0, 0] for j in range(20)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
+    "aruco_in_camera": [[0, 0] for k in range(20)],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
     "time_sub_microseconds": 0.,  # 从得到的时候到完成识别的时间差值
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
@@ -89,6 +90,7 @@ class GetDataThread(QThread):
         # 获取位置的网址
         url1 = f'{app_data["image_and_data_get_url"]}/app_data'
         res = requests.get(url1).json()
+        app_data["aruco_id_list"] = res["aruco_id_list"]
         app_data["aruco_in_camera"] = res["aruco_in_camera"]
         app_data["drone_xyz_of_aruco"] = res["drone_xyz_of_aruco"]
         app_data["drone_xyz_rvec_of_aruco"] = res["drone_xyz_rvec_of_aruco"]
@@ -206,7 +208,7 @@ class main_win(QMainWindow, fly_window):
     def get_video_frame_pushButton_event(self):
         try:
             url1 = f'{app_data["image_and_data_get_url"]}/video_frame'
-            res = requests.get(url1,timeout=3).text
+            res = requests.get(url1, timeout=3).text
             frame_encoded_bytes = base64.b64decode(res)
             img_shape = (480, 640, 3)
             img_dtype = np.uint8
@@ -549,6 +551,10 @@ class main_win(QMainWindow, fly_window):
             # 将全局变量中的值写到gui中
             # 目前使用一个二维码
             # TODO 如果有多个，可以进行计算融合
+            # "aruco_id_list": [-1 for o in range(20)],  # 当前识别到的aruco的id：0-20
+            # "drone_xyz_of_aruco": [[0, 0, 0] for i in range(20)],  # m 在二维码下无人机的位置
+            # "drone_xyz_rvec_of_aruco": [[0, 0, 0] for j in range(20)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
+            # "aruco_in_camera": [[0, 0] for k in range(20)],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
             self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m({: <4}ms)'.format(
                 *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0]),
                 (app_data["time_sub_microseconds"] / 1000).__round__(2)))
