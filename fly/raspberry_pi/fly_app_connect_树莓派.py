@@ -448,17 +448,17 @@ class main_win(QMainWindow, fly_window):
 
                 # 自动在二维码上空悬停，二维码在相机正中间
                 if app_data["drone_is_auto_search_aruco"]:
-                    step_speed_0 = abs(float(app_data["aruco_in_camera"][0][0]) - 0) * 1
+                    step_speed_x = abs(float(app_data["aruco_in_camera"][0][0]) - 0) * 1
                     # 差距越大越要向那个地方飞，因为二维码是相对于无人机的
                     if float(app_data["aruco_in_camera"][0][0]) > 0:  # x -> left,right
-                        app_data["drone_right_m_s"] = step_speed_0
+                        app_data["drone_right_m_s"] = step_speed_x
                     else:
-                        app_data["drone_right_m_s"] = -step_speed_0
-                    step_speed_1 = abs(float(app_data["aruco_in_camera"][0][1]) - 0) * 1
+                        app_data["drone_right_m_s"] = -step_speed_x
+                    step_speed_y = abs(float(app_data["aruco_in_camera"][0][1]) - 0) * 1
                     if float(app_data["aruco_in_camera"][0][1]) > 0:  # y -> forward,back
-                        app_data["drone_forward_m_s"] = step_speed_1
+                        app_data["drone_forward_m_s"] = step_speed_y
                     else:
-                        app_data["drone_forward_m_s"] = -step_speed_1
+                        app_data["drone_forward_m_s"] = -step_speed_y
 
                 v_list = [float(app_data["drone_forward_m_s"]), float(app_data["drone_right_m_s"]),
                           float(app_data["drone_down_m_s"]), float(app_data["drone_yawspeed_deg_s"])]

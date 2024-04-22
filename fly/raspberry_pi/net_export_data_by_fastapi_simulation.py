@@ -2,21 +2,20 @@ import base64
 import datetime
 import threading
 
+import cv2
 import numpy as np
 
-import uvicorn
-from fastapi import FastAPI
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import PlainTextResponse
-from starlette.responses import JSONResponse
-
-import cv2
 import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Odometry
-from starlette.responses import PlainTextResponse
+
+import uvicorn
+from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
@@ -34,8 +33,8 @@ app_data = {
     "drone_real_position": [0, 0, 0],  # 无人机的真实位置
     "drone_real_orientation": [0, 0, 0, 0],  # 无人机的真实旋转向量
     # 相机的参数
-    "camera_k": [[454.6843330573585,0.0,424.0],[0.0,454.6843330573585,240.0],[0.0,0.0,1]],  # 相机的内参k
-    "camera_dis_coeffs": [0.0001,0.0001,0.0001,0.0001,0],  # 相机的内参dis_coeffs
+    "camera_k": [[454.6843330573585, 0.0, 424.0], [0.0, 454.6843330573585, 240.0], [0.0, 0.0, 1]],  # 相机的内参k
+    "camera_dis_coeffs": [0.0001, 0.0001, 0.0001, 0.0001, 0],  # 相机的内参dis_coeffs
 }
 
 # 识别二维码的初始化
@@ -63,10 +62,8 @@ class Ros2TopicSubscription(Node):
         global video_frame, app_data
         start_time = datetime.datetime.now()
         cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-        # ret, buffer1 = cv2.imencode('.jpg', cv_image)
         img = cv_image
         # 识别二维码
-        # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # 获取图像的框，id，rejectedImgPoints
         corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
