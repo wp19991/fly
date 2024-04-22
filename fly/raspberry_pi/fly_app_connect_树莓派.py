@@ -26,15 +26,16 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # 运行无人机的时候更新这些参数
 app_data = {
     # 可以修改下面5个默认的参数，在程序启动后会变成下面的参数
-    "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
-    # "mavsdk_server_address": "192.168.1.216",  # 模拟环境
+    # "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
+    "mavsdk_server_address": "192.168.1.216",  # 模拟环境
     # "mavsdk_server_address": "192.168.77.23",  # 真实环境，移动热点
     "mavsdk_server_port": "50051",
-    "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
+    # "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
+    "image_and_data_get_url": "http://192.168.1.216:8000",  # 模拟环境
     # "image_and_data_get_url": "http://192.168.77.23:8000",  # 移动热点
     "system_address": "udp://:14540",
     "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
-    "is_simulation": False,  # 模拟环境中需要修改这个为True
+    "is_simulation": True,  # 模拟环境中需要修改这个为True
     "drone_down_m_s": -1,  # 起飞的速度
     "drone_max_up_down_m_s": 1,  # 无人机飞行上升下降速度的最大值
     "drone_forward_m_s": 0.,
@@ -131,7 +132,10 @@ class GetVideoThread(QThread):
         url1 = f'{app_data["image_and_data_get_url"]}/video_frame'
         res = requests.get(url1).text
         frame_encoded_bytes = base64.b64decode(res)
-        img_shape = (480, 640, 3)
+        if app_data["is_simulation"]:
+            img_shape = (480, 848, 3)
+        else:
+            img_shape = (480, 640, 3)
         img_dtype = np.uint8
         frame_decoded = np.frombuffer(frame_encoded_bytes, dtype=img_dtype).reshape(img_shape)
         ret, buffer = cv2.imencode('.jpg', frame_decoded)
@@ -154,6 +158,7 @@ class main_win(QMainWindow, fly_window):
         self.limit_height_m_doubleSpinBox.setValue(app_data["limit_height_m"])
 
         # 绑定事件
+        self.takeoff_and_hold_and_land_pushButton.clicked.connect(self.takeoff_and_hold_and_land_pushButton_event)
         self.test_connect_pushButton.clicked.connect(self.test_connect_pushButton_event)
         self.drone_takeoff_pushButton.clicked.connect(self.drone_takeoff_pushButton_event)
         self.drone_landing_pushButton.clicked.connect(self.drone_landing_pushButton_event)
@@ -209,11 +214,15 @@ class main_win(QMainWindow, fly_window):
         self.test_connect_data_url_pushButton.setText("关闭连接")
 
     def get_video_frame_pushButton_event(self):
+        global app_data
         try:
             url1 = f'{app_data["image_and_data_get_url"]}/video_frame'
             res = requests.get(url1, timeout=3).text
             frame_encoded_bytes = base64.b64decode(res)
-            img_shape = (480, 640, 3)
+            if app_data["is_simulation"]:
+                img_shape = (480, 848, 3)
+            else:
+                img_shape = (480, 640, 3)
             img_dtype = np.uint8
             frame_decoded = np.frombuffer(frame_encoded_bytes, dtype=img_dtype).reshape(img_shape)
             ret, buffer = cv2.imencode('.jpg', frame_decoded)
@@ -293,6 +302,76 @@ class main_win(QMainWindow, fly_window):
     def drone_landing_pushButton_event(self):
         global app_data
         app_data['drone_is_running'] = False
+
+    @asyncSlot()
+    async def takeoff_and_hold_and_land_pushButton_event(self):
+        global drone1, app_data
+        if app_data['test_connect_status'] != "可以启动":
+            self.print_log("无人机启动失败，当前不能起飞，请检查无人机状态")
+            return
+        if float(app_data["drone_down_m_s"]) < -1:
+            self.print_log("油门太大，可能失控，目前上升速度大于1m/s，数字越小油门越大")
+            return
+        # 准备完成，进行起飞
+        self.print_log("等待启动...")
+        await drone1.action.arm()
+        self.print_log(f"无人机设置起飞限制高度{app_data['limit_height_m']}")
+        await drone1.action.set_takeoff_altitude(float(app_data["limit_height_m"]))
+        self.print_log("无人机起飞")
+        await drone1.action.takeoff()
+        for i in range(100):
+            await asyncio.sleep(0.1)
+            if app_data['drone_is_kill_fly']:
+                app_data["drone_is_auto_search_aruco"] = False
+                self.drone_search_status_label.setText("悬停关闭")
+                self.drone_search_aruco_pushButton.setText("启动悬停")
+                app_data['drone_is_kill_fly'] = False
+                await drone1.action.kill()
+                return
+            if app_data["is_simulation"]:
+                # 模拟环境中可以获取确定的高度信息，真实环境中高度信息依赖气压计或者光流模块
+                async for position in drone1.telemetry.position():
+                    app_data["drone_altitude"] = position.relative_altitude_m
+                    break
+            else:
+                # 更新高度，需要有光流模块，光流模块比使用气压计获取的高度信息准确
+                async for distance_sensor in drone1.telemetry.distance_sensor():
+                    app_data["drone_altitude"] = distance_sensor.current_distance_m
+                    break
+        self.print_log("启动悬停...")
+        await drone1.action.hold()
+        for i in range(100):
+            await asyncio.sleep(0.1)
+            if app_data['drone_is_kill_fly']:
+                app_data["drone_is_auto_search_aruco"] = False
+                self.drone_search_status_label.setText("悬停关闭")
+                self.drone_search_aruco_pushButton.setText("启动悬停")
+                app_data['drone_is_kill_fly'] = False
+                await drone1.action.kill()
+                return
+            if app_data["is_simulation"]:
+                # 模拟环境中可以获取确定的高度信息，真实环境中高度信息依赖气压计或者光流模块
+                async for position in drone1.telemetry.position():
+                    app_data["drone_altitude"] = position.relative_altitude_m
+                    break
+            else:
+                # 更新高度，需要有光流模块，光流模块比使用气压计获取的高度信息准确
+                async for distance_sensor in drone1.telemetry.distance_sensor():
+                    app_data["drone_altitude"] = distance_sensor.current_distance_m
+                    break
+        self.print_log("进行降落...")
+        await drone1.action.land()
+        for i in range(100):
+            await asyncio.sleep(0.1)
+            if app_data['drone_is_kill_fly']:
+                app_data["drone_is_auto_search_aruco"] = False
+                self.drone_search_status_label.setText("悬停关闭")
+                self.drone_search_aruco_pushButton.setText("启动悬停")
+                app_data['drone_is_kill_fly'] = False
+                await drone1.action.kill()
+                return
+        self.print_log("解除武装...")
+        await drone1.action.disarm()
 
     @asyncSlot()
     async def drone_takeoff_pushButton_event(self):
@@ -454,19 +533,6 @@ class main_win(QMainWindow, fly_window):
                 app_data["drone_altitude"] = distance_sensor.current_distance_m
                 break
         self.print_log("无人机当前高度{}".format(app_data["drone_altitude"]))
-        self.print_log("无人机设置初始点...")
-        await drone1.offboard.set_velocity_body(
-            VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
-
-        self.print_log("启动无人机开始板载模式")
-        try:
-            await drone1.offboard.start()
-        except OffboardError as error:
-            self.print_log(f"启动非车载模式失败，错误为: {error._result.result}")
-            self.print_log("解除武装")
-            await drone1.action.disarm()
-            return
-
         app_data['test_connect_status'] = "可以启动"
 
     def drone_forward_m_s_doubleSpinBox_event(self):
