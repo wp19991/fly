@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
+    <width>1087</width>
     <height>603</height>
    </rect>
   </property>
@@ -522,7 +522,7 @@
      <rect>
       <x>470</x>
       <y>280</y>
-      <width>321</width>
+      <width>331</width>
       <height>201</height>
      </rect>
     </property>
@@ -726,25 +726,12 @@ y:{}m/s</string>
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>470</x>
-      <y>20</y>
-      <width>320</width>
-      <height>240</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>opencv-image</string>
-    </property>
-   </widget>
    <widget class="QTextBrowser" name="textBrowser">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>490</y>
-      <width>781</width>
+      <width>791</width>
       <height>101</height>
      </rect>
     </property>
@@ -934,8 +921,115 @@ y:{}m/s</string>
      </item>
     </layout>
    </widget>
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>480</x>
+      <y>10</y>
+      <width>321</width>
+      <height>261</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>相机</string>
+     </attribute>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>320</width>
+        <height>240</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>opencv-image</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+   <widget class="PlotWidget" name="real_graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>30</y>
+      <width>261</width>
+      <height>171</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>220</y>
+      <width>261</width>
+      <height>171</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="aruco_real_wc_graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>410</y>
+      <width>261</width>
+      <height>171</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_29">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>10</y>
+      <width>54</width>
+      <height>12</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>真实位置</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_30">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>200</y>
+      <width>61</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>识别位置</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_31">
+    <property name="geometry">
+     <rect>
+      <x>810</x>
+      <y>390</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>真实与识别误差</string>
+    </property>
+   </widget>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PlotWidget</class>
+   <extends>QGraphicsView</extends>
+   <header>pyqtgraph</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="res/res.qrc"/>
  </resources>

@@ -1,3 +1,13 @@
+"""
+cd  mavsdk_remote/
+./mavsdk_server_musl_x86_64 -p 50051 udp://:14550
+
+cd PX4-Autopilot
+MAV_1_BROADCAST=1 make px4_sitl gazebo-classic_iris_downward_depth_camera
+pkill -f px4
+
+python3 net_export_data_by_fastapi_simulation.py
+"""
 import base64
 import datetime
 import threading
@@ -20,7 +30,7 @@ from fastapi.responses import JSONResponse
 app = FastAPI()
 
 app_data = {
-    "aruco_length_m": 0.052,  # aruco实际的的大小边长
+    "aruco_length_m": 0.78833,  # aruco实际的的大小边长
     "aruco_id_in_real_map": [[0, 0] for _ in range(22)],  # 对应二维码在现实中对应的位置，为了多个二维码进行计算融合，指定一个原点
     "aruco_id_list": [-1 for _ in range(22)],  # 当前识别到的aruco的id：0-20
     "drone_xyz_of_aruco": [[0, 0, 0] for _ in range(22)],  # m 在二维码下无人机的位置

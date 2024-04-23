@@ -63,6 +63,7 @@ windows下运行`keybpard_fly.py`，需要先去`https://github.com/mavlink/mavs
 
         <include>
             <uri>model://depth_camera</uri>
+            <!-- x y z roll pitch yaw-->
             <pose>0.108 0 -0.01 0 1.5708 0</pose>
         </include>
         <joint name="depth_camera_joint" type="revolute">

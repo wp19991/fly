@@ -1,15 +1,18 @@
+import math
 import os
 import sys
 import json
 import base64
 import datetime
 import asyncio
+import time
 
 import cv2
 import numpy as np
 import requests
 from qasync import QEventLoop, QApplication, asyncSlot
 
+import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMainWindow
@@ -66,12 +69,21 @@ drone1: System = System()
 parameters = cv2.aruco.DetectorParameters()
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
+# 运行时候的数据保存
+run_data = {
+    "now_time": [],  # 当前数据的时间戳
+    "aruco_in_camera": [],  # 0-1 在相机的画面中，二维码的位置，中心点为0，0，右上为正
+    "drone_xyz_of_aruco": [],  # 在二维码中计算得到的无人机的xyz坐标
+    "drone_real_position": []  # 在模拟环境中真实的xyz坐标
+}
+
 
 class GetDataThread(QThread):
     # 构造函数
     def __init__(self):
         super(GetDataThread, self).__init__()
         self.isCancel = False
+        self.is_save_data = False
 
     def cancel(self):
         # 线程取消
@@ -88,6 +100,9 @@ class GetDataThread(QThread):
                 break
             # time.sleep(0.1)
 
+    def save_data(self):
+        self.is_save_data = True
+
     def fresh(self):
         global app_data
         # 获取位置的网址
@@ -103,6 +118,11 @@ class GetDataThread(QThread):
         app_data["camera_dis_coeffs"] = res["camera_dis_coeffs"]
         app_data["drone_real_position"] = res["drone_real_position"]
         app_data["drone_real_orientation"] = res["drone_real_orientation"]
+        if self.is_save_data:
+            run_data["now_time"].append(time.time())
+            run_data["aruco_in_camera"].append(res["aruco_in_camera"][0])
+            run_data["drone_xyz_of_aruco"].append(res["drone_xyz_of_aruco"][0])
+            run_data["drone_real_position"].append(res["drone_real_position"])
 
 
 class GetVideoThread(QThread):
@@ -178,6 +198,19 @@ class main_win(QMainWindow, fly_window):
         self.drone_response_time_s_doubleSpinBox.valueChanged.connect(self.drone_response_time_s_doubleSpinBox_event)
         self.limit_height_m_doubleSpinBox.valueChanged.connect(self.limit_height_m_doubleSpinBox_event)
 
+        # 在一个xy坐标系下，绘制两者的图像
+        red_pen = pg.mkPen(color=(255, 0, 0), width=2)  # 红
+        green_pen = pg.mkPen(color=(0, 255, 0), width=2)  # 绿
+        white_pen = pg.mkPen(color=(255, 255, 255), width=2)  # 设置曲线颜色为红色,宽度设置为15个像素点
+        self.aruco_line = self.graphicsView.plot([0], [0], pen=red_pen)
+        self.real_line = self.graphicsView.plot([0], [0], pen=green_pen)
+        self.aruco_real_wc_line = self.aruco_real_wc_graphicsView.plot([0], [0], pen=white_pen)
+        self.real_line_in_real_view = self.real_graphicsView.plot([0], [0], pen=green_pen)
+        self.plt_timer = QtCore.QTimer()  # 创建时间类
+        self.plt_timer.setInterval(100)  # 设置内部定时为100
+        self.plt_timer.timeout.connect(self.update_plot_data)  # 50s时间一到则调用update_plot_data函数
+        self.plt_timer.start()  # 开始计时
+
         # 创建一个定时器对象刷新参数显示与收集
         self.fresh_data_timer = QTimer(self)
         self.fresh_data_timer.setInterval(100)
@@ -191,6 +224,47 @@ class main_win(QMainWindow, fly_window):
         self.get_video_th.changePixmap.connect(self.set_image)
         # 启动线程的按钮
         self.test_connect_data_url_pushButton.clicked.connect(self.test_connect_data_url_pushButton_event)
+
+    def update_plot_data(self):
+        global run_data
+        get_len = min(len(run_data["drone_real_position"]), len(run_data["drone_xyz_of_aruco"]))
+        drone_real_position_data = run_data["drone_real_position"][-get_len:]
+        drone_xyz_of_aruco_data = run_data["drone_xyz_of_aruco"][-get_len:]
+        # drone_xyz_of_aruco_data和0，0点始终有偏移量
+        # 将两者的数值按照比例对齐
+        scaled_list = []
+        for i in range(len(drone_xyz_of_aruco_data)):
+            row = []
+            for j in range(len(drone_xyz_of_aruco_data[i])):
+                if drone_xyz_of_aruco_data[i][2] == 0:
+                    row.append(0)
+                else:
+                    row.append(
+                        drone_xyz_of_aruco_data[i][j] * (drone_real_position_data[i][2] - 0.1) /
+                        drone_xyz_of_aruco_data[i][2])
+                    # print(drone_real_position_data[i][2] / drone_xyz_of_aruco_data[i][2]) #18.3
+            scaled_list.append(row)
+        drone_xyz_of_aruco_data = scaled_list
+        x_list = []
+        y_list = []
+        for i_xyz in drone_xyz_of_aruco_data:
+            x_list.append(i_xyz[0])
+            y_list.append(i_xyz[1])
+        self.aruco_line.setData(np.array(x_list), np.array(y_list))  # 更新x轴和y轴的数据
+        x_list1 = []
+        y_list1 = []
+        for i_xyz in drone_real_position_data:
+            x_list1.append(i_xyz[0])
+            y_list1.append(i_xyz[1])
+        self.real_line.setData(np.array(x_list1), np.array(y_list1))  # 更新x轴和y轴的数据
+        self.real_line_in_real_view.setData(np.array(x_list1), np.array(y_list1))
+        # 绘制误差
+        y_list_wc = []
+        for i_xy_x1y1 in zip(x_list, y_list, x_list1, y_list1):
+            t_wc = math.sqrt((i_xy_x1y1[0] - i_xy_x1y1[2]) ** 2 + (i_xy_x1y1[1] - i_xy_x1y1[3]) ** 2)
+            y_list_wc.append(t_wc)
+        x_list_wc = [i for i in range(len(y_list_wc))]
+        self.aruco_real_wc_line.setData(np.array(x_list_wc), np.array(y_list_wc))
 
     def set_image(self, image):
         self.label.clear()
@@ -214,6 +288,21 @@ class main_win(QMainWindow, fly_window):
         self.test_connect_data_url_pushButton.setText("关闭连接")
 
     def get_video_frame_pushButton_event(self):
+        global run_data
+        if self.get_data_th.is_save_data:
+            # 保存数据
+            with open(f"run_data_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.json",
+                      "w", encoding="utf-8") as f:
+                f.write(json.dumps(run_data, ensure_ascii=False,indent=4))
+            self.get_data_th.is_save_data = False
+            run_data = {
+                "now_time": [],  # 当前数据的时间戳
+                "aruco_in_camera": [],  # 0-1 在相机的画面中，二维码的位置，中心点为0，0，右上为正
+                "drone_xyz_of_aruco": [],  # 在二维码中计算得到的无人机的xyz坐标
+                "drone_real_position": []  # 在模拟环境中真实的xyz坐标
+            }
+        else:
+            self.get_data_th.save_data()  # 开始收集数据
         global app_data
         try:
             url1 = f'{app_data["image_and_data_get_url"]}/video_frame'
@@ -579,7 +668,7 @@ class main_win(QMainWindow, fly_window):
                                     f" -- {list(text)}")
 
     def print_log_one_line(self, new_text):
-        new_text = f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')}  -- {new_text}"
+        new_text = f"{datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')} -- {new_text}"
         text = self.textBrowser.toPlainText()
         lines = text.split('\n')
 
@@ -625,14 +714,16 @@ class main_win(QMainWindow, fly_window):
             # "drone_xyz_of_aruco": [[0, 0, 0] for i in range(20)],  # m 在二维码下无人机的位置
             # "drone_xyz_rvec_of_aruco": [[0, 0, 0] for j in range(20)],  # 在二维码下相机的旋转位置，和无人机去向指定坐标有关
             # "aruco_in_camera": [[0, 0] for k in range(20)],  # % 在相机的画面中，二维码的位置，中心点为0，0，右上为正
-            self.drone_xyz_of_aruco_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m({: <4}ms)'.format(
-                *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0]),
-                (app_data["time_sub_microseconds"] / 1000).__round__(2)))
+            self.drone_xyz_of_aruco_label.setText(
+                '<span style=" color:#ce0000;">x:{: <7}m,y:{: <7}m,z:{: <7}m</span>({: <4}ms)'.format(
+                    *map(lambda x: round(float(x), 4), app_data["drone_xyz_of_aruco"][0]),
+                    (app_data["time_sub_microseconds"] / 1000).__round__(2)))
             # 在相机中，二维码的位置，目前使用第一个二维码
             self.aruco_in_camera_label.setText('x:{: <7}%,y:{: <7}%'.format(
                 *map(lambda x: round(float(x), 4), app_data["aruco_in_camera"][0])))
-            self.drone_real_position_label.setText('x:{: <7}m,y:{: <7}m,z:{: <7}m'.format(
-                *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
+            self.drone_real_position_label.setText(
+                '<span style=" color:#00d000;">x:{: <7}m,y:{: <7}m,z:{: <7}m</span>'.format(
+                    *map(lambda x: round(float(x), 4), app_data["drone_real_position"])))
             self.drone_altitude_label.setText('{: <7}m'.format(float(app_data["drone_altitude"]).__round__(3)))
             self.test_connect_status_label.setText(app_data["test_connect_status"])
             self.drone_control_xy_label.setText('x:{: <7}m/s\ny:{: <7}m/s'.format(
