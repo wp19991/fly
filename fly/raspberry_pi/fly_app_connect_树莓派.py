@@ -18,36 +18,44 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, Qt
 
+from fly_gui import Ui_fly_app as fly_window
+
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, VelocityBodyYawspeed)
-
-from fly_gui import Ui_fly_app as fly_window
 
 os.chdir(os.path.dirname(__file__))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # 运行无人机的时候更新这些参数
 app_data = {
-    # 可以修改下面5个默认的参数，在程序启动后会变成下面的参数
-    # "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
-    "mavsdk_server_address": "192.168.1.216",  # 模拟环境
-    # "mavsdk_server_address": "192.168.77.23",  # 真实环境，移动热点
-    "mavsdk_server_port": "50051",
-    # "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
-    "image_and_data_get_url": "http://192.168.1.216:8000",  # 模拟环境
-    # "image_and_data_get_url": "http://192.168.77.23:8000",  # 移动热点
-    "system_address": "udp://:14540",
-    "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
+    # 可以修改下面默认的参数，在程序启动后会变成下面的参数
     "is_simulation": True,  # 模拟环境中需要修改这个为True
+    "limit_height_m": 3.6,  # 真实环境中需要光流模块获取高度信息
+    "mavsdk_server_address": "192.168.1.216",  # 模拟环境
+    "image_and_data_get_url": "http://192.168.1.216:8000",  # 模拟环境
+
+    # "is_simulation": False,  # 模拟环境中需要修改这个为True
+    # "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
+    # "mavsdk_server_address": "192.168.1.112",  # 真实环境，101的wifi
+    # "image_and_data_get_url": "http://192.168.1.112:8000",  # 101的wifi
+
+    # "is_simulation": False,  # 模拟环境中需要修改这个为True
+    # "limit_height_m": 0.6,  # 真实环境中需要光流模块获取高度信息
+    # "image_and_data_get_url": "http://192.168.248.23:8000",  # 移动热点
+    # "mavsdk_server_address": "192.168.248.23",  # 真实环境，移动热点
+
+    "drone_max_move_m_s": 0.1,  # 无人机移动速度的最大值，在自动悬停的时候会用到，手动控制则不受影响
+    "mavsdk_server_port": "50051",
+    "system_address": "udp://:14540",
     "drone_down_m_s": -1,  # 起飞的速度
     "drone_max_up_down_m_s": 1,  # 无人机飞行上升下降速度的最大值
     "drone_forward_m_s": 0.,
     "drone_right_m_s": 0.,
     "drone_yawspeed_deg_s": 0.,
-    "drone_step_size_m_s": 0.2,
-    "drone_response_time_s": 0.2,
-    "camera_k": [[391.95377974, 0.0, 335.17043033], [0.0, 377.71297362, 245.03757622], [0.0, 0.0, 1.0]],  # 相机的内参k
-    "camera_dis_coeffs": [0.04714445, -0.07145486, 0.00588382, 0.00876541, 0.07204812],  # 相机的内参dis_coeffs
+    "drone_step_size_m_s": 0.1,
+    "drone_response_time_s": 0.1,
+    "camera_k": [],  # 相机的内参k，用于展示用
+    "camera_dis_coeffs": [],  # 相机的内参dis_coeffs，用于展示用
     "aruco_id_in_real_map": [[0, 0] for u in range(22)],  # 对应二维码在现实中对应的位置，为了多个二维码进行计算融合，指定一个原点
     "aruco_id_list": [-1 for o in range(20)],  # 当前识别到的aruco的id：0-20
     "drone_xyz_of_aruco": [[0, 0, 0] for i in range(20)],  # m 在二维码下无人机的位置
@@ -63,12 +71,6 @@ app_data = {
     "drone_is_kill_fly": False,  # 是否直接关闭飞行的电机
     "now_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
 }
-
-drone1: System = System()
-# 识别二维码的初始化
-parameters = cv2.aruco.DetectorParameters()
-aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-
 # 运行时候的数据保存
 run_data = {
     "now_time": [],  # 当前数据的时间戳
@@ -76,6 +78,8 @@ run_data = {
     "drone_xyz_of_aruco": [],  # 在二维码中计算得到的无人机的xyz坐标
     "drone_real_position": []  # 在模拟环境中真实的xyz坐标
 }
+# 无人机系统定义
+drone1: System = System()
 
 
 class GetDataThread(QThread):
@@ -98,7 +102,6 @@ class GetDataThread(QThread):
             except Exception as e:
                 print(e)
                 break
-            # time.sleep(0.1)
 
     def save_data(self):
         self.is_save_data = True
@@ -201,11 +204,15 @@ class main_win(QMainWindow, fly_window):
         # 在一个xy坐标系下，绘制两者的图像
         red_pen = pg.mkPen(color=(255, 0, 0), width=2)  # 红
         green_pen = pg.mkPen(color=(0, 255, 0), width=2)  # 绿
-        white_pen = pg.mkPen(color=(255, 255, 255), width=2)  # 设置曲线颜色为红色,宽度设置为15个像素点
+        blue_pen = pg.mkPen(color=(0, 0, 255), width=2)  # 设置曲线颜色为红色,宽度设置为15个像素点
         self.aruco_line = self.graphicsView.plot([0], [0], pen=red_pen)
         self.real_line = self.graphicsView.plot([0], [0], pen=green_pen)
-        self.aruco_real_wc_line = self.aruco_real_wc_graphicsView.plot([0], [0], pen=white_pen)
+        self.aruco_real_wc_line = self.aruco_real_wc_graphicsView.plot([0], [0], pen=blue_pen)
         self.real_line_in_real_view = self.real_graphicsView.plot([0], [0], pen=green_pen)
+        # 将graphicsView背景设置为白色
+        self.graphicsView.setBackground((255, 255, 255))
+        self.aruco_real_wc_graphicsView.setBackground((255, 255, 255))
+        self.real_graphicsView.setBackground((255, 255, 255))
         self.plt_timer = QtCore.QTimer()  # 创建时间类
         self.plt_timer.setInterval(100)  # 设置内部定时为100
         self.plt_timer.timeout.connect(self.update_plot_data)  # 50s时间一到则调用update_plot_data函数
@@ -256,7 +263,8 @@ class main_win(QMainWindow, fly_window):
         for i_xyz in drone_real_position_data:
             x_list1.append(i_xyz[0])
             y_list1.append(i_xyz[1])
-        self.real_line.setData(np.array(x_list1), np.array(y_list1))  # 更新x轴和y轴的数据
+        if app_data["is_simulation"]:
+            self.real_line.setData(np.array(x_list1), np.array(y_list1))  # 更新x轴和y轴的数据
         self.real_line_in_real_view.setData(np.array(x_list1), np.array(y_list1))
         # 绘制误差
         y_list_wc = []
@@ -293,7 +301,7 @@ class main_win(QMainWindow, fly_window):
             # 保存数据
             with open(f"run_data_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.json",
                       "w", encoding="utf-8") as f:
-                f.write(json.dumps(run_data, ensure_ascii=False,indent=4))
+                f.write(json.dumps(run_data, ensure_ascii=False, indent=4))
             self.get_data_th.is_save_data = False
             run_data = {
                 "now_time": [],  # 当前数据的时间戳
@@ -474,20 +482,6 @@ class main_win(QMainWindow, fly_window):
         # 准备完成，进行起飞
         self.print_log("等待启动...")
         await drone1.action.arm()
-        self.print_log(f"无人机设置起飞限制高度{app_data['limit_height_m']}")
-        await drone1.action.set_takeoff_altitude(float(app_data["limit_height_m"]))
-        self.print_log("无人机设置初始点")
-        await drone1.offboard.set_velocity_body(
-            VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
-
-        self.print_log("无人机开始板载模式")
-        try:
-            await drone1.offboard.start()
-        except OffboardError as error:
-            self.print_log(f"启动非车载模式失败，错误为: {error._result.result}")
-            self.print_log("解除武装")
-            await drone1.action.disarm()
-            return
 
         app_data["drone_is_running"] = True
         self.print_log(f'油门给到{app_data["drone_down_m_s"]}，进行起飞')
@@ -511,11 +505,8 @@ class main_win(QMainWindow, fly_window):
                 # 可以更新气压计高度
                 now_height_m = 0
                 if app_data["is_simulation"]:
-                    # 模拟环境中可以获取确定的高度信息，真实环境中高度信息依赖气压计或者光流模块
-                    async for position in drone1.telemetry.position():
-                        app_data["drone_altitude"] = position.relative_altitude_m
-                        now_height_m = position.relative_altitude_m
-                        break
+                    # 模拟环境飞行高度用真实高度
+                    now_height_m = app_data["drone_real_position"][2]
                 else:
                     # 更新高度，需要有光流模块，光流模块比使用气压计获取的高度信息准确
                     async for distance_sensor in drone1.telemetry.distance_sensor():
@@ -536,14 +527,19 @@ class main_win(QMainWindow, fly_window):
                     app_data["drone_down_m_s"] = -step_speed_height
 
                 # 自动在二维码上空悬停，二维码在相机正中间
+                # 0-0.3m/s内进行控制飞行，否则会移动过快
                 if app_data["drone_is_auto_search_aruco"]:
                     step_speed_x = abs(float(app_data["aruco_in_camera"][0][0]) - 0) * 1
+                    if step_speed_x > float(app_data["drone_max_move_m_s"]):
+                        step_speed_x = float(app_data["drone_max_move_m_s"])
                     # 差距越大越要向那个地方飞，因为二维码是相对于无人机的
                     if float(app_data["aruco_in_camera"][0][0]) > 0:  # x -> left,right
                         app_data["drone_right_m_s"] = step_speed_x
                     else:
                         app_data["drone_right_m_s"] = -step_speed_x
                     step_speed_y = abs(float(app_data["aruco_in_camera"][0][1]) - 0) * 1
+                    if step_speed_y > float(app_data["drone_max_move_m_s"]):
+                        step_speed_y = float(app_data["drone_max_move_m_s"])
                     if float(app_data["aruco_in_camera"][0][1]) > 0:  # y -> forward,back
                         app_data["drone_forward_m_s"] = step_speed_y
                     else:
@@ -622,7 +618,21 @@ class main_win(QMainWindow, fly_window):
                 app_data["drone_altitude"] = distance_sensor.current_distance_m
                 break
         self.print_log("无人机当前高度{}".format(app_data["drone_altitude"]))
+        self.print_log(f"无人机设置起飞限制高度{app_data['limit_height_m']}")
+        await drone1.action.set_takeoff_altitude(float(app_data["limit_height_m"]))
+        self.print_log("无人机设置初始点")
+        await drone1.offboard.set_velocity_body(
+            VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
+        self.print_log("无人机开始板载模式")
+        try:
+            await drone1.offboard.start()
+        except OffboardError as error:
+            self.print_log(f"启动非车载模式失败，错误为: {error._result.result}")
+            self.print_log("解除武装")
+            await drone1.action.disarm()
+            return
         app_data['test_connect_status'] = "可以启动"
+        self.print_log("可以启动")
 
     def drone_forward_m_s_doubleSpinBox_event(self):
         global app_data

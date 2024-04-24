@@ -6,6 +6,7 @@ fly/raspberry_pi/mavsdk_server_linux-arm64-musl
 fly/raspberry_pi/params.json
 fly/目标.md
 fly/raspberry_pi/log_app_data.json
+fly/raspberry_pi/run_data_*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
